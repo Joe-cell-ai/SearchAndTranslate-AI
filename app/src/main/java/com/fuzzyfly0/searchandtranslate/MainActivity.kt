@@ -122,7 +122,8 @@ class MainActivity : ComponentActivity() {
                                         onBackClick = { currentScreen = "home" }
                                     )
                                 }
-                                else -> {
+                                "legacyHome" -> {
+                                    androidx.activity.compose.BackHandler { currentScreen = "home" }
                                     WobbleHomeScreen(
                                         onOpenDeviceInfo = { currentScreen = "status" },
                                         onOpenRestoration = { currentScreen = "restoration" },
@@ -134,6 +135,16 @@ class MainActivity : ComponentActivity() {
                                         openLaunchMethods = pendingSettingsPage == PAGE_LAUNCH_METHODS,
                                         onLaunchMethodsOpened = { pendingSettingsPage = null },
                                         contentPadding = WindowInsets.systemBars.asPaddingValues(),
+                                    )
+                                }
+                                else -> {
+                                    com.fuzzyfly0.searchandtranslate.ui.CircleSearchHomeScreen(
+                                        onOpenSettings = { currentScreen = "legacyHome" },
+                                        onOpenRestoration = { currentScreen = "restoration" },
+                                        onOpenLaunchMethods = {
+                                            pendingSettingsPage = PAGE_LAUNCH_METHODS
+                                            currentScreen = "legacyHome"
+                                        },
                                     )
                                 }
                             }
