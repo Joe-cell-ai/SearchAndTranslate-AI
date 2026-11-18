@@ -33,6 +33,18 @@ internal object SearchHistoryStore {
         }
     }
 
+    @Synchronized
+    fun removeAt(context: Context, index: Int) {
+        val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val entries = runCatching { JSONArray(prefs.getString(KEY_ENTRIES, "[]")) }.getOrDefault(JSONArray())
+        if (index !in 0 until entries.length()) return
+        val updated = JSONArray()
+        for (i in 0 until entries.length()) {
+            if (i != index) updated.put(entries.getJSONObject(i))
+        }
+        prefs.edit().putString(KEY_ENTRIES, updated.toString()).apply()
+    }
+
     fun clear(context: Context) {
         context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().remove(KEY_ENTRIES).apply()
     }
