@@ -137,3 +137,12 @@ The feature is ready for a release candidate only when the exact model artifact 
 - Checks coroutine cancellation between tile executions and reports progress as tiles complete.
 - The final output still requires an ARGB pixel buffer and bitmap allocation; peak native/JVM memory, image quality at tile boundaries, and runtime latency require CI and device measurement.
 - This is not GFPGAN and does not enable face restoration. It also does not claim device validation.
+
+
+## Development batch 3: streaming tile stitching
+
+- Replaced the engine's list of retained tile ARGB buffers with an incremental stitch session.
+- Each inferred tile now has its non-overlapping core copied directly into the final output canvas; the engine no longer retains all tile output arrays until inference completes.
+- The session validates tile membership, duplicate submissions, dimensions, expanded/core bounds, output pixel budget, and missing tiles at completion.
+- Added unit coverage for incremental stitching, incomplete plans, duplicate submissions, overlap cropping, and 4x coordinate scaling.
+- This reduces retained tile-output memory; it does not remove the final full-resolution ARGB canvas or Android bitmap allocation. Device peak-memory and latency validation remain required.
