@@ -24,7 +24,7 @@ These are infrastructure components. They do not constitute an executable restor
 | Select Android inference runtime | Not started | Do not add a native runtime until graph operators and Android ABI/provider compatibility are known. Measure per-ABI APK impact. |
 | Implement actual Real-ESRGAN inference | Not started | The current `RestorationEngine` is an interface; no concrete ONNX engine is wired. |
 | Model download/install/update/remove | Partially implemented | Added `SafRestorationModelStore`: persisted user-selected SAF folder, bounded HTTPS download, streaming SHA-256 verification, URI index, delete, and temporary cache staging for inference. The current development batch adds app-indexed installed-model inventory, size/access status, and delete controls. Still needs Android build/provider testing, folder-access recovery UX, and verification across document providers. The legacy app-private store remains for compatibility; production UI must use SAF. |
-| User-facing restoration flow | Partially implemented | Home entry and SAF folder setup are merged. This development batch adds installed-model listing, displayed storage size/access state, and per-model deletion. Image selection, before/after comparison, progress, cancellation, restoration errors, and a verified downloadable catalog remain outstanding. |
+| User-facing restoration flow | Partially implemented | Home entry, SAF model management, local image selection, downsampled original preview, and task-mode selection are implemented. The restore action remains explicitly non-operational until a verified inference engine and model catalog are available. Before/after comparison, real progress, cancellation, and runtime error handling remain outstanding. |
 | GFPGAN | Not started | Treat as a separate optional model and inference pipeline; verify its own license, export, runtime, and memory requirements. |
 | Device performance and quality validation | Not started | Requires real model inference on a Pixel-class arm64 device. Qualcomm NPU figures are not evidence of Pixel CPU performance. |
 
@@ -69,3 +69,13 @@ The feature is ready for a release candidate only when the exact model artifact 
 - Adds per-model deletion from the Manage Models screen and refreshes the inventory after folder changes or deletion.
 - Does not add model binaries, URLs, checksums, or an inference dependency. Downloads remain disabled pending independent artifact and runtime verification.
 - Android CI and document-provider behavior must pass before this batch is considered verified.
+
+
+## Latest development batch (PR #13)
+
+- Adds Android image selection through the system document picker for image files.
+- Decodes a downsampled local preview, rejecting invalid images and files above a conservative 100-megapixel source limit; preview decoding is capped at approximately 8 megapixels.
+- Adds an explicit mode selector for image upscaling versus face restoration.
+- Makes the local-only privacy behavior visible in the UI.
+- Does not upload the selected image and does not fabricate a restored output. The restore action clearly reports that inference is unavailable until the verified engine/model pipeline is connected.
+- Android CI and manual picker/large-image validation remain required.
