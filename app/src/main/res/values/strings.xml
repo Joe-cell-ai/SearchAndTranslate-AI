@@ -1,0 +1,321 @@
+﻿<!--
+  ~ /*
+  ~  * Copyright (C) 2025 AKS-Labs (original author)
+  ~  *
+  ~  * This program is free software: you can redistribute it and/or modify
+  ~  * it under the terms of the GNU General Public License as published by
+  ~  * the Free Software Foundation, either version 3 of the License, or
+  ~  * (at your option) any later version.
+  ~  *
+  ~  * This program is distributed in the hope that it will be useful,
+  ~  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~  * GNU General Public License for more details.
+  ~  *
+  ~  * You should have received a copy of the GNU General Public License
+  ~  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  ~  */
+  -->
+
+<resources>
+    <string name="app_name">Search &amp; Translate</string>
+
+    <!-- General -->
+    <string name="settings">Settings</string>
+    <string name="general">General</string>
+    <string name="back">Back</string>
+    <string name="close">Close</string>
+    <string name="cancel">Cancel</string>
+    <string name="grant">Grant</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="reset">Reset</string>
+    <string name="save">Save</string>
+    <string name="copy">Copy</string>
+    <string name="share">Share</string>
+    <string name="search">Search</string>
+    <string name="delete">Delete</string>
+    <string name="pin">Pin</string>
+    <string name="label_selected">Selected</string>
+    <string name="cd_dismiss">Dismiss</string>
+    <string name="cd_selected">Selected</string>
+    <string name="cd_reset">Reset</string>
+    <string name="btn_close">Close</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="btn_grant">Grant</string>
+    <string name="status_on">ON</string>
+    <string name="status_off">OFF</string>
+    <string name="unknown_app">Unknown App</string>
+
+    <!-- Main Screen -->
+    <string name="header_title">Search &amp; Translate</string>
+    <string name="toast_getting_started">Set up the permissions, then choose your launch triggers.</string>
+    <string name="subtitle_main">Search anything on your screen instantly.</string>
+    <string name="label_required">REQUIRED:</string>
+    <string name="label_accessibility_active">Accessibility Service Active</string>
+    <string name="label_accessibility_active_subtitle">Unlocks every trigger: status bar &amp; custom overlay</string>
+    <string name="label_enable_accessibility">Enable Accessibility</string>
+    <string name="label_enable_accessibility_subtitle">To do its job properly, the app needs this permission.\nTap allow and we\'re good to go! &#x1F44D;</string>
+    <string name="label_optional_assistant">OPTIONAL: For Home Button Trigger</string>
+    <string name="label_default_assistant_set">Default Assistant Set</string>
+    <string name="label_set_default_assistant">Set as Default Assistant</string>
+    <string name="label_set_default_assistant_subtitle">Tap to set it up and see how your device launches assistants.</string>
+    <string name="section_customization">CUSTOMIZATION</string>
+    <string name="toast_could_not_open_link">Could not open link</string>
+    <string name="toast_accessibility_settings_error">Could not open Accessibility Settings</string>
+    <string name="label_dont_show_again">Don\'t show this again</string>
+
+    <!-- Content Descriptions -->
+    <string name="cd_granted">Granted</string>
+    <string name="cd_active">Active</string>
+    <string name="cd_overlay_settings">Overlay Settings</string>
+    <string name="cd_screenshot">Screenshot</string>
+    <string name="cd_close">Close</string>
+    <string name="cd_google_search">Google Search</string>
+    <string name="cd_logo">Logo</string>
+    <string name="cd_translate">Translate</string>
+    <string name="cd_github">Github</string>
+    <string name="cd_privacy">Privacy</string>
+    <string name="cd_move_up">Move Up</string>
+    <string name="cd_move_down">Move Down</string>
+    <string name="cd_back">Back</string>
+    <string name="cd_delete">Delete</string>
+
+    <!-- Search Screen Labels -->
+    <string name="label_translate">Translate</string>
+    <string name="label_search">Search</string>
+    <string name="label_screen">Screen</string>
+    <string name="label_gallery">Gallery</string>
+    <string name="label_camera">Live cam</string>
+    <string name="toast_image_load_failed">Unable to load that image</string>
+    <string name="label_share">Share</string>
+    <string name="label_open_app">Open: %1$s</string>
+
+    <!-- Menu Items -->
+    <string name="menu_select_language_model">Select Language / Model</string>
+    <string name="menu_import_model">Import Model (.traineddata)</string>
+
+    <!-- Toast Messages -->
+    <string name="toast_translate_unavailable">Translation unavailable. Check accessibility service.</string>
+    <string name="label_translating">Translating…</string>
+    <string name="toast_saved_to_gallery">Saved to Gallery</string>
+    <string name="toast_failed_to_save">Failed to save</string>
+    <string name="toast_accessibility_permission_needed">Allow accessibility permission to use this feature</string>
+    <string name="toast_text_copied">Text copied \u2713</string>
+    <string name="toast_image_not_found">Image file not found</string>
+    <string name="toast_split_screen_failed">Split Screen not supported or failed</string>
+    <string name="toast_screen_off_requires_api">Screen Off requires Android 9+</string>
+    <string name="toast_auto_rotate">Auto Rotate: %1$s</string>
+    <string name="toast_auto_rotate_permission">Permission required for Auto Rotate</string>
+    <string name="toast_enable_accessibility_tile">Please enable Search &amp; Translate Accessibility Service</string>
+    <string name="toast_save_failed">Save failed</string>
+
+    <!-- Share -->
+    <string name="share_chooser_title">Share Selection</string>
+    <string name="share_chooser_text">Share text via</string>
+    <string name="share_chooser_pin">Share Pin</string>
+
+    <!-- Settings Screen -->
+    <string name="section_search_engines">Search Engines</string>
+    <string name="hint_tab_sequence">Arrows change the tab order; the switch turns an engine off</string>
+
+    <!-- Overlay Settings Screen -->
+    <string name="title_overlay_settings">Overlay Settings</string>
+    <string name="overlay_setting_enable_title">Enable StatusBar Overlay</string>
+    <string name="overlay_setting_enable_subtitle">Show trigger zone over status bar</string>
+    <string name="overlay_setting_landscape_title">Landscape Mode</string>
+    <string name="overlay_setting_landscape_subtitle">Keep overlay active in landscape</string>
+    <string name="overlay_setting_show_title">Show Overlay</string>
+    <string name="overlay_setting_show_subtitle">Show overlay to adjust position</string>
+    <string name="overlay_a11y_off_title">Accessibility service is off</string>
+    <string name="overlay_a11y_off_subtitle">Overlay strips can\'t appear until the accessibility service is enabled</string>
+    <string name="overlay_a11y_off_enable">Enable</string>
+    <string name="section_overlays">Overlays</string>
+    <string name="btn_add_overlay">Add Overlay</string>
+    <string name="label_no_overlays">No overlays added. Click Add Overlay to start.</string>
+    <string name="label_overlay_number">Overlay %1$d</string>
+    <string name="label_x_position">Horizontal Position (X): %1$ddp</string>
+    <string name="label_y_position">Vertical Position (Y): %1$ddp</string>
+    <string name="label_width">Width: %1$ddp</string>
+    <string name="label_height">Height: %1$ddp</string>
+    <string name="section_gestures">Gestures</string>
+    <string name="gestures_subtitle">Configure taps, long press &amp; swipes</string>
+    <string name="title_configure_gestures">Configure Gestures</string>
+    <string name="title_select_action">Select Action</string>
+    <string name="title_select_app">Select App</string>
+    <string name="hint_search_apps">Search apps</string>
+
+    <!-- Bottom Sheets -->
+    <string name="subtitle_explore_projects">Explore our other projects</string>
+    <string name="section_our_apps">OUR APPS</string>
+    <string name="btn_view_in_play_store">View in Play Store</string>
+    <string name="subtitle_view_in_play_store">See apps on Play Store</string>
+    <string name="section_choose_payment">CHOOSE PAYMENT METHOD</string>
+    <string name="label_foss">FOSS</string>
+
+    <!-- Privacy Dialog -->
+    <string name="title_privacy">Privacy &amp; Data Usage Transparency</string>
+    <string name="privacy_q_upload">Where does my searched image go?</string>
+    <string name="privacy_a_upload">Only to the search engines.\n\nThe circled area is sent directly to Google, Bing and TinEye: each results tab uploads it to its own engine (all tabs load right away), like picking a file on that engine\'s website. No image host or other server is involved.</string>
+    <string name="privacy_q_why_upload">Why is the image uploaded at all?</string>
+    <string name="privacy_a_why_upload">An image search compares your image with the engine\'s index, so the engine needs the image itself. Nothing is sent until you start a search.</string>
+    <string name="privacy_q_device">Does anything leave my device on its own?</string>
+    <string name="privacy_a_device">No. Nothing leaves your device without an explicit action from you — and even then, only the area you circle is sent, and only to the search engines. No other screen content, files, or personal data ever leaves your device.</string>
+    <string name="privacy_q_safe">Which services see my image?</string>
+    <string name="privacy_a_safe">Only the search engines: Google, Bing and TinEye each get the image for their results tab and handle it under their own privacy policy.\n\nThis app is not associated with them in any way. Please read their policies: Google, Bing and TinEye.</string>
+    <string name="privacy_q_personal">Should I search personal or private images?</string>
+    <string name="privacy_a_personal">Please don\'t.\n\nAvoid uploading personal photos, private documents, IDs, or anything sensitive. Only search images that are safe and non-personal.</string>
+    <string name="privacy_q_store">Does the app store my images or links?</string>
+    <string name="privacy_a_store">No.\n\nYour images and URLs are not stored, tracked, or logged by this app.</string>
+    <string name="privacy_q_developer">Can the developer see my images or links?</string>
+    <string name="privacy_a_developer">No. Never.\n\nThis app:\n\u2022 Has no server\n\u2022 Does not store images\n\u2022 Does not store image URLs\n\u2022 Does not track what you search\n\u2022 Does not collect data\n\nYour image goes only from you to the search engine.</string>
+    <string name="privacy_reminder_title">Important reminder</string>
+    <string name="privacy_reminder_body">Your searched images can remain on search engine servers, caches, and backups. This is why you should never upload private or personal images.</string>
+    <string name="btn_privacy_accept">I Understand &amp; Accept</string>
+
+    <!-- Accessibility Disclosure Dialog -->
+    <string name="title_accessibility_permission">Grant Accessibility Permission</string>
+    <string name="body_accessibility_permission">This permission is required to capture the screen and detect the double tap gesture to trigger Search &amp; Translate or other actions. If the app is used as your default assistant, this permission is optional.</string>
+    <string name="label_accessibility_agree">I understand how this permission will be used and agree to proceed</string>
+
+    <!-- Copy Text Overlay -->
+    <string name="label_scanning_text">Scanning text\u2026</string>
+    <string name="title_select_ocr_model">Select OCR Model</string>
+    <string name="label_no_text_found">No text found on screen.</string>
+    <string name="label_language_detect_failed">Failed to auto-detect language.</string>
+    <string name="toolbar_btn_copy">Copy</string>
+    <string name="toolbar_btn_share">Share</string>
+    <string name="toolbar_btn_translate">Translate</string>
+    <string name="toolbar_btn_all">All</string>
+    <string name="toolbar_btn_cancel">Cancel</string>
+
+    <!-- Search Method Selector -->
+
+    <!-- Google Lens Helper -->
+
+    <!-- Accessibility Service -->
+    <string name="pinned_btn_share">Share</string>
+    <string name="pinned_btn_delete">Delete</string>
+    <string name="pinned_btn_save">Save</string>
+
+    <!-- Tile Service -->
+    <string name="tile_label">Search &amp; Translate</string>
+
+
+
+    <!-- Action Type Friendly Names -->
+    <string name="action_none">No Action</string>
+    <string name="action_screenshot">Take Screenshot</string>
+    <string name="action_flashlight">Flashlight</string>
+    <string name="action_home">Go Home</string>
+    <string name="action_back">Go Back</string>
+    <string name="action_recents">Recent Apps</string>
+    <string name="action_lock_screen">Lock Screen</string>
+    <string name="action_open_notifications">Open Notifications</string>
+    <string name="action_quick_settings">Quick Settings</string>
+    <string name="action_search_auto">Search &amp; Translate</string>
+    <string name="action_search_lens">Google Lens Search</string>
+    <string name="action_search_multi">Multi-Search</string>
+    <string name="action_split_screen">Split Screen</string>
+    <string name="action_open_app">Open Application</string>
+    <string name="action_scroll_top">Scroll to Top</string>
+    <string name="action_scroll_bottom">Scroll to Bottom</string>
+    <string name="action_screen_off">Turn Off Screen</string>
+    <string name="action_toggle_auto_rotate">Toggle Auto Rotate</string>
+    <string name="action_media_play_pause">Media Play/Pause</string>
+    <string name="action_media_next">Media Next</string>
+    <string name="action_media_previous">Media Previous</string>
+
+    <!-- Gesture Type Friendly Names -->
+    <string name="gesture_double_tap">Double Tap</string>
+    <string name="gesture_long_press">Long Press</string>
+    <string name="gesture_triple_tap">Triple Tap</string>
+    <string name="gesture_swipe_up">Swipe Up</string>
+    <string name="gesture_swipe_down">Swipe Down</string>
+    <string name="gesture_swipe_left">Swipe Left</string>
+    <string name="gesture_swipe_right">Swipe Right</string>
+
+    <!-- Search Engine Display Names -->
+    <string name="engine_google">Google</string>
+    <string name="engine_bing">Bing</string>
+    <string name="engine_tineye">TinEye</string>
+
+    <!-- Quick Settings Tile -->
+    <string name="qs_tile_label">CTS</string>
+
+    <!-- Triggers -->
+    <string name="title_settings">Settings</string>
+    <string name="cd_app_icon">App icon</string>
+    <string name="label_triggers">TRIGGERS</string>
+    <string name="section_triggers">TRIGGERS</string>
+    <string name="section_search">SEARCH</string>
+    <string name="section_app">APP</string>
+    <string name="triggers_card_title">Triggers</string>
+
+    <!-- Settings hierarchy -->
+    <string name="settings_cat_triggers_subtitle">Status bar &amp; custom overlay</string>
+    <string name="settings_cat_zones">Custom overlay</string>
+    <string name="settings_cat_zones_subtitle">Position, size &amp; gestures</string>
+    <string name="settings_cat_search">Search</string>
+    <string name="settings_cat_search_subtitle">Circle action, search method &amp; engines</string>
+    <string name="settings_cat_general_subtitle">Offline translator &amp; app options</string>
+    <string name="settings_cat_about">About</string>
+    <string name="settings_cat_about_subtitle">Version &amp; licenses</string>
+    <string name="section_launch_methods">LAUNCH METHODS</string>
+    <string name="section_behavior">BEHAVIOR</string>
+    <string name="about_version">Version</string>
+    <string name="about_source_code">Source code</string>
+    <string name="about_source_subtitle">github.com/fuzzyfly0/SearchAndTranslate</string>
+    <string name="about_licenses">Open-source licenses</string>
+    <string name="about_licenses_subtitle">Third-party components and their licenses</string>
+    <string name="about_original_project">Original project</string>
+    <string name="about_original_project_subtitle">Based on CircleToSearch by AKS Labs (GPL-3.0)</string>
+    <string name="wizard_title">Grant permissions to get started</string>
+    <string name="wizard_hint">Grant any one to continue</string>
+    <string name="wizard_a11y_title">Accessibility</string>
+    <string name="wizard_assistant_title">Assistant</string>
+    <string name="wizard_grant">Grant</string>
+    <string name="wizard_granted">Granted</string>
+    <string name="assistant_sheet_title">Use as your assistant</string>
+    <string name="assistant_sheet_body">Set Search &amp; Translate as your device\'s assistant. Then the normal way your device opens an assistant — long-press Home, hold the gesture handle, etc. — will open Search &amp; Translate instead.</string>
+    <string name="assistant_opt_set_title">Set as default assistant</string>
+    <string name="home_running_title">Search &amp; Translate</string>
+    <string name="home_running_state">running</string>
+    <string name="home_launch_methods">Launch methods</string>
+    <string name="home_custom_overlay">Custom overlay</string>
+    <string name="home_set_up">Set up</string>
+    <string name="info_screen_title">App Info</string>
+    <string name="info_section_about">ABOUT</string>
+    <string name="info_status_active">Active</string>
+    <string name="info_status_off">Off</string>
+    <string name="info_status_needs_a11y">Needs accessibility</string>
+    <string name="info_package">Package</string>
+    <string name="info_build">Build</string>
+    <string name="info_build_debug">Debug</string>
+    <string name="info_build_release">Release</string>
+    <string name="info_made_by_akslabs">Based on CircleToSearch by AKS Labs</string>
+    <string name="trigger_name_statusbar">Status bar</string>
+    <string name="trigger_name_assistant">Home button</string>
+    <string name="trigger_statusbar_title">Status bar double-tap</string>
+    <string name="trigger_statusbar_subtitle">Double-tap the status bar area to start</string>
+    <string name="home_statusbar_width">Width</string>
+    <string name="home_statusbar_height">Height</string>
+    <string name="home_statusbar_ypos">Vertical position</string>
+    <string name="trigger_qs_title">Quick Settings tile</string>
+    <string name="trigger_hw_notice">These launch methods need the accessibility service enabled.</string>
+    <string name="setting_circle_action_title">After circling an area</string>
+    <string name="setting_circle_action_ask">Ask: Search or Translate</string>
+    <string name="setting_circle_action_translate">Always translate in place</string>
+    <string name="setting_circle_action_search">Always search</string>
+    <string name="circle_choice_search">Search</string>
+    <string name="circle_choice_translate">Translate</string>
+    <string name="label_translator_title">Translator</string>
+    <string name="home_ocr">OCR</string>
+    <string name="home_ocr_subtitle">Text recognition in images &amp; on screen</string>
+    <string name="home_languages">Languages</string>
+    <string name="home_languages_subtitle">Source language &amp; language packs</string>
+    <string name="label_translator_subtitle">Languages, text recognition &amp; translation options</string>
+    <string name="launch_assistant_settings_title">Digital assistant</string>
+    <string name="launch_assistant_settings_subtitle">Set Search &amp; Translate as assistant: long-press Home or hold the gesture bar to open it</string>
+    <string name="launch_a11y_settings_title">Accessibility</string>
+    <string name="launch_a11y_settings_subtitle">Turn the accessibility service on: double-tap the top of the screen to open the app</string>
+</resources>
