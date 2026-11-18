@@ -90,3 +90,13 @@ The feature is ready for a release candidate only when the exact model artifact 
 - Runtime decision: prototype ONNX Runtime Android CPU/XNNPACK first after artifact inspection. Keep model weights outside the APK and use the existing SAF folder picker and per-session cache staging. Measure runtime APK impact; do not assume NNAPI/QNN acceleration.
 - GFPGAN remains a separate model/backend. Its export, exact graph, weight license notices, runtime compatibility, and face-cropping/alignment pipeline still require independent validation.
 - No inference dependency, model URL, or unverified checksum was added to the app. This is deliberate: shipping a guessed contract would risk a non-working app and APK bloat.
+
+
+## Development batch 1: CI-gated exact model verification
+
+- Added a CI step that downloads the immutable FP32 ONNX artifact from the publisher's content-addressed URL.
+- CI recomputes SHA-256 and fails on any mismatch before inspection.
+- CI installs the optional Python ONNX parser, runs the repository's archive/model inspector, and asserts one float32 NCHW RGB input named `input`, one float32 RGB output named `output`, rank-four tensors, and opset 17.
+- The downloaded model remains in the ephemeral GitHub runner temp directory; it is not committed, cached as an app asset, or packaged into either APK.
+- This is an independent verification attempt performed by GitHub-hosted CI. A successful run is required before the candidate can be admitted to the app catalog.
+- Android inference runtime integration remains blocked until the exact graph/operator inventory and CI verification results are available.
