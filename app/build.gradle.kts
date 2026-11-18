@@ -175,6 +175,4 @@ dependencies {
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     implementation("androidx.webkit:webkit:1.9.0")
     implementation("com.google.code.gson:gson:2.10.1")
-    // Optional model weights remain in user-selected SAF storage; only the inference runtime ships in the APK.
-    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.31.1")
 }
