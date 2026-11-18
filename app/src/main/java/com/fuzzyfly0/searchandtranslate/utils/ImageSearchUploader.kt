@@ -91,6 +91,7 @@ object ImageSearchUploader {
                 "image",
                 emptyMap(),
             )
+            else -> error("Provider website should have been handled before upload mapping")
         }
         if (engine == SearchEngine.TinEye) return base to tinEyePage(image)
         val fields = textFields.entries.joinToString("") { (name, value) ->
