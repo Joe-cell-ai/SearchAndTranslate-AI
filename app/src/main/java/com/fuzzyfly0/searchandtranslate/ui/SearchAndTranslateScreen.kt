@@ -912,7 +912,16 @@ fun SearchAndTranslateScreen(
                     val t = fitMapping(viewW.toFloat(), viewH.toFloat(), bmp.width.toFloat(), bmp.height.toFloat())
                     val searchRegion = fitCrop(rect, t, bmp.width, bmp.height)
                     saveCircle(rect, searchRegion)
-                    selectedBitmap = ImageUtils.cropBitmap(bmp, searchRegion)
+                    // Keep the user's freehand boundary, not just its bounding rectangle.
+                    // Map canvas points through ContentScale.Fit into source-bitmap coordinates,
+                    // then make them local to the crop. Fewer than three points fall back safely.
+                    val lassoPoints = currentPathPoints.map { point ->
+                        Pair(
+                            t.unmapX(point.x) - searchRegion.left,
+                            t.unmapY(point.y) - searchRegion.top,
+                        )
+                    }
+                    selectedBitmap = ImageUtils.cropBitmapLasso(bmp, searchRegion, lassoPoints)
                 }
                 scope.launch {
                     selectionAnim.animateTo(1f, tween(600))
