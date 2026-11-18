@@ -44,6 +44,7 @@ fun CircleSearchHomeScreen(
     onOpenSettings: () -> Unit,
     onOpenRestoration: () -> Unit,
     onOpenLaunchMethods: () -> Unit,
+    onOpenHistory: () -> Unit,
 ) {
     val context = LocalContext.current
     val colors = MaterialTheme.colorScheme
@@ -100,7 +101,7 @@ fun CircleSearchHomeScreen(
                     )
                 }
             })
-            FeatureCard(Modifier.weight(1f), "History", "Recent activity", Icons.Default.History, onClick = onOpenSettings)
+            FeatureCard(Modifier.weight(1f), "History", "Recent searches & translations", Icons.Default.History, onClick = onOpenHistory)
         }
         FeatureCard(Modifier.fillMaxWidth(), "AI image tools", "Upscale and restore images with optional on-device models", Icons.Default.Tune, onClick = onOpenRestoration)
         Spacer(Modifier.weight(1f))

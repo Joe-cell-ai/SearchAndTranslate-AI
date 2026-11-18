@@ -109,6 +109,12 @@ class MainActivity : ComponentActivity() {
                                         initialPage = pendingSettingsPage,
                                     )
                                 }
+                                "history" -> {
+                                    androidx.activity.compose.BackHandler { currentScreen = "home" }
+                                    com.fuzzyfly0.searchandtranslate.ui.SearchHistoryScreen(
+                                        onBack = { currentScreen = "home" },
+                                    )
+                                }
                                 "restoration" -> {
                                     androidx.activity.compose.BackHandler { currentScreen = "home" }
                                     com.fuzzyfly0.searchandtranslate.ui.RestorationModelsScreen(
@@ -145,6 +151,7 @@ class MainActivity : ComponentActivity() {
                                             pendingSettingsPage = PAGE_LAUNCH_METHODS
                                             currentScreen = "legacyHome"
                                         },
+                                        onOpenHistory = { currentScreen = "history" },
                                     )
                                 }
                             }
