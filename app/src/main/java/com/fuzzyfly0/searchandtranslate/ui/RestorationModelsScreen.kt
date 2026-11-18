@@ -7,6 +7,8 @@ package com.fuzzyfly0.searchandtranslate.ui
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.content.ContentValues
+import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material3.Button
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -45,6 +48,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.fuzzyfly0.searchandtranslate.ai.restoration.RestorationTask
+import com.fuzzyfly0.searchandtranslate.ai.restoration.RestorationModel
+import com.fuzzyfly0.searchandtranslate.ai.restoration.RestorationEngineRunner
+import com.fuzzyfly0.searchandtranslate.ai.restoration.RealEsrganOnnxEngine
 import com.fuzzyfly0.searchandtranslate.ai.restoration.SafRestorationModelStore
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
@@ -65,6 +71,20 @@ fun RestorationModelsScreen(onBack: () -> Unit) {
     var selectedImage by remember { mutableStateOf<Bitmap?>(null) }
     var selectedTask by remember { mutableStateOf(RestorationTask.IMAGE_UPSCALING) }
     var selectedImageName by remember { mutableStateOf<String?>(null) }
+    var restoredImage by remember { mutableStateOf<Bitmap?>(null) }
+    var isWorking by remember { mutableStateOf(false) }
+    var progress by remember { mutableStateOf(0f) }
+    val realEsrganModel = remember {
+        RestorationModel(
+            id = "realesrgan-x4plus",
+            displayName = "Real-ESRGAN x4plus",
+            task = RestorationTask.IMAGE_UPSCALING,
+            downloadUrl = "https://huggingface.co/skillsafe-ai/realesrgan-x4plus/resolve/107475e49b7d46412cc966481efccc3500955801/model.onnx",
+            sha256 = "4851ec156207d271f5328605d0582eeb851e656227da8aca093ced9e60789291",
+            maxBytes = RestorationModel.MAX_MODEL_BYTES,
+        )
+    }
+    val runner = remember(store) { RestorationEngineRunner(store, RealEsrganOnnxEngine()) }
 
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
@@ -77,6 +97,7 @@ fun RestorationModelsScreen(onBack: () -> Unit) {
                 decoded.onSuccess { bitmap ->
                     selectedImage?.takeIf { it !== bitmap && !it.isRecycled }?.recycle()
                     selectedImage = bitmap
+                    restoredImage = null
                     selectedImageName = imageUri.lastPathSegment ?: "Selected image"
                     message = "Image loaded locally. It has not been uploaded."
                 }.onFailure {
@@ -189,18 +210,81 @@ fun RestorationModelsScreen(onBack: () -> Unit) {
                 label = { Text("Face restoration") },
             )
         }
+        if (selectedTask == RestorationTask.FACE_RESTORATION) {
+            Text(
+                "Face restoration is not available yet. The verified Real-ESRGAN model below performs image upscaling only; GFPGAN will be added separately.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         Button(
-            onClick = { message = "Restoration is not available until a verified inference engine and model are integrated." },
-            enabled = selectedImage != null,
+            onClick = {
+                val input = selectedImage ?: return@Button
+                scope.launch {
+                    isWorking = true
+                    progress = 0f
+                    message = null
+                    try {
+                        if (selectedTask != RestorationTask.IMAGE_UPSCALING) {
+                            error("Face restoration is not available yet. Choose Image upscaling.")
+                        }
+                        if (store.installedModelUri(realEsrganModel) == null) {
+                            check(selectedFolder != null) { "Choose a model folder before downloading the model." }
+                            message = "Downloading and verifying Real-ESRGAN model…"
+                            store.install(realEsrganModel) { downloaded, total ->
+                                progress = if (total > 0L) (downloaded.toFloat() / total).coerceIn(0f, 1f) else 0f
+                            }
+                            refreshModels()
+                        }
+                        message = "Restoring image on this device…"
+                        progress = 0f
+                        val output = runner.run(realEsrganModel, input) { value -> progress = value }
+                        restoredImage = output
+                        message = "Restoration complete. The image has not been uploaded."
+                    } catch (error: Throwable) {
+                        message = error.message ?: "Restoration failed."
+                    } finally {
+                        isWorking = false
+                    }
+                }
+            },
+            enabled = selectedImage != null && !isWorking,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("Restore image")
+            Text(if (isWorking) "Working…" else "Restore image")
         }
-        Text(
-            "Preview and model selection are ready for integration. The actual inference engine is not connected yet, so no output is fabricated.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        if (isWorking) {
+            LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
+            Text("Progress: ${(progress * 100).toInt()}%")
+        }
+        restoredImage?.let { output ->
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text("Restored result", style = MaterialTheme.typography.titleMedium)
+                    Image(
+                        bitmap = output.asImageBitmap(),
+                        contentDescription = "Restored image preview",
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 320.dp),
+                        contentScale = ContentScale.Fit,
+                    )
+                    Text("${output.width} × ${output.height}", style = MaterialTheme.typography.labelMedium)
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                message = runCatching {
+                                    saveRestoredBitmap(context, output)
+                                    "Saved to Pictures/SearchAndTranslate."
+                                }.getOrElse { "Could not save image: ${it.message}" }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text("Save to Gallery") }
+                }
+            }
+        }
 
         Text("Installed models", style = MaterialTheme.typography.titleMedium)
         if (installedModels.isEmpty()) {
@@ -261,11 +345,9 @@ fun RestorationModelsScreen(onBack: () -> Unit) {
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                Text("Model downloads are not enabled yet", style = MaterialTheme.typography.titleSmall)
-                Text(
-                    "Real-ESRGAN still needs direct ONNX binary inspection and a verified Android inference contract. GFPGAN requires its own model and separate runtime validation. Downloads stay disabled until those checks pass.",
-                    style = MaterialTheme.typography.bodySmall,
-                )
+                Text("Available model", style = MaterialTheme.typography.titleSmall)
+                Text("Real-ESRGAN x4plus · 4× image upscaling · downloaded on demand to your selected folder.", style = MaterialTheme.typography.bodySmall)
+                Text("The model is checksum-verified before use. Model weights are not bundled in the APK.", style = MaterialTheme.typography.bodySmall)
             }
         }
         message?.let {
@@ -274,6 +356,32 @@ fun RestorationModelsScreen(onBack: () -> Unit) {
         OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
             Text("Back")
         }
+    }
+}
+
+private suspend fun saveRestoredBitmap(context: android.content.Context, bitmap: Bitmap) = withContext(Dispatchers.IO) {
+    val resolver = context.contentResolver
+    val values = ContentValues().apply {
+        put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, "restored-${System.currentTimeMillis()}.png")
+        put(android.provider.MediaStore.Images.Media.MIME_TYPE, "image/png")
+        if (Build.VERSION.SDK_INT >= 29) {
+            put(android.provider.MediaStore.Images.Media.RELATIVE_PATH, "Pictures/SearchAndTranslate")
+            put(android.provider.MediaStore.Images.Media.IS_PENDING, 1)
+        }
+    }
+    val uri = resolver.insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+        ?: error("Gallery could not create an image entry")
+    try {
+        resolver.openOutputStream(uri, "w")?.use { output ->
+            check(bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)) { "Image encoding failed" }
+        } ?: error("Gallery output stream is unavailable")
+        if (Build.VERSION.SDK_INT >= 29) {
+            val completed = ContentValues().apply { put(android.provider.MediaStore.Images.Media.IS_PENDING, 0) }
+            resolver.update(uri, completed, null, null)
+        }
+    } catch (error: Throwable) {
+        resolver.delete(uri, null, null)
+        throw error
     }
 }
 
