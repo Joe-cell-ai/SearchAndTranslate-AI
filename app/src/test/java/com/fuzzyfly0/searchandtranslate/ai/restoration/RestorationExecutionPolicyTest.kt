@@ -80,6 +80,56 @@ class RestorationExecutionPolicyTest {
     }
 
     @Test
+    fun exactTileBoundariesDoNotCreateEmptyExtraTiles() {
+        val tiles = policy.planTiles(512, 512)
+
+        assertEquals(4, tiles.size)
+        assertEquals(RestorationRect(0, 0, 256, 256), tiles[0].core)
+        assertEquals(RestorationRect(256, 0, 512, 256), tiles[1].core)
+        assertEquals(RestorationRect(0, 256, 256, 512), tiles[2].core)
+        assertEquals(RestorationRect(256, 256, 512, 512), tiles[3].core)
+    }
+
+    @Test
+    fun onePixelAndIrregularEdgesRemainCoveredExactlyOnce() {
+        val width = 513
+        val height = 257
+        val coverage = IntArray(width * height)
+        val tiles = policy.planTiles(width, height)
+
+        tiles.forEach { tile ->
+            val core = tile.core
+            for (y in core.top until core.bottom) {
+                for (x in core.left until core.right) {
+                    coverage[y * width + x] += 1
+                }
+                assertTrue(tile.expanded.top <= y && tile.expanded.bottom > y)
+            }
+            assertTrue(core.left >= 0 && core.top >= 0)
+            assertTrue(core.right <= width && core.bottom <= height)
+            assertTrue(tile.expanded.left <= core.left)
+            assertTrue(tile.expanded.top <= core.top)
+            assertTrue(tile.expanded.right >= core.right)
+            assertTrue(tile.expanded.bottom >= core.bottom)
+        }
+
+        assertTrue(coverage.all { it == 1 })
+        assertEquals(1, coverage.last())
+    }
+
+    @Test
+    fun acceptsSinglePixelImageAndRejectsNegativeDimensions() {
+        val tile = policy.planTiles(1, 1).single()
+        assertEquals(RestorationRect(0, 0, 1, 1), tile.core)
+        assertThrows(IllegalArgumentException::class.java) {
+            policy.validateInput(-1, 1)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            policy.validateOutput(1, -1)
+        }
+    }
+
+    @Test
     fun tilesStayInsideImageBounds() {
         val tiles = policy.planTiles(513, 257)
 
