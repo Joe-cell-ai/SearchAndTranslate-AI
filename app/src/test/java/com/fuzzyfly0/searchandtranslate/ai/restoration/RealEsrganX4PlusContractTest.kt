@@ -14,57 +14,54 @@ import org.junit.Test
 
 class RealEsrganX4PlusContractTest {
     @Test
-    fun acceptsPublishedFloat32StaticNchwContract() {
+    fun acceptsInspectedDynamicFloat32NchwContract() {
         assertTrue(
             RealEsrganX4PlusContract.accepts(
-                inputName = "input",
-                inputShape = longArrayOf(1, 3, 128, 128),
-                inputType = "tensor(float)",
-                outputName = "output",
-                outputShape = longArrayOf(1, 3, 512, 512),
-                outputType = "tensor(float)",
+                "input", longArrayOf(1, 3, -1, -1), "tensor(float)",
+                "output", longArrayOf(1, 3, -1, -1), "tensor(float)",
             )
         )
     }
 
     @Test
-    fun rejectsDifferentInputLayoutOrTileSize() {
-        assertFalse(
+    fun acceptsDynamicGraphAndKeepsTileSizeAsExecutionPolicy() {
+        assertTrue(
             RealEsrganX4PlusContract.accepts(
-                "input", longArrayOf(1, 128, 128, 3), "tensor(float)",
-                "output", longArrayOf(1, 3, 512, 512), "tensor(float)",
+                "input", longArrayOf(1, 3, -1, -1), "tensor(float)",
+                "output", longArrayOf(1, 3, -1, -1), "tensor(float)",
             )
         )
-        assertFalse(
-            RealEsrganX4PlusContract.accepts(
-                "input", longArrayOf(1, 3, 256, 256), "tensor(float)",
-                "output", longArrayOf(1, 3, 1024, 1024), "tensor(float)",
-            )
-        )
+        assertTrue(RealEsrganX4PlusContract.TILE_EDGE == 128)
     }
 
     @Test
-    fun rejectsQuantizedOrUnexpectedTensorTypes() {
-        assertFalse(
-            RealEsrganX4PlusContract.accepts(
-                "input", longArrayOf(1, 3, 128, 128), "tensor(uint8)",
-                "output", longArrayOf(1, 3, 512, 512), "tensor(float)",
-            )
-        )
-    }
-
-    @Test
-    fun rejectsUnexpectedTensorNamesAndOutputShape() {
-        assertFalse(
-            RealEsrganX4PlusContract.accepts(
-                "images", longArrayOf(1, 3, 128, 128), "tensor(float)",
-                "output", longArrayOf(1, 3, 512, 512), "tensor(float)",
-            )
-        )
+    fun rejectsStaticShapesAndDifferentInputLayout() {
         assertFalse(
             RealEsrganX4PlusContract.accepts(
                 "input", longArrayOf(1, 3, 128, 128), "tensor(float)",
-                "output", longArrayOf(1, 3, 128, 128), "tensor(float)",
+                "output", longArrayOf(1, 3, -1, -1), "tensor(float)",
+            )
+        )
+        assertFalse(
+            RealEsrganX4PlusContract.accepts(
+                "input", longArrayOf(1, 128, 128, 3), "tensor(float)",
+                "output", longArrayOf(1, 3, -1, -1), "tensor(float)",
+            )
+        )
+    }
+
+    @Test
+    fun rejectsQuantizedTypesAndUnexpectedNames() {
+        assertFalse(
+            RealEsrganX4PlusContract.accepts(
+                "input", longArrayOf(1, 3, -1, -1), "tensor(uint8)",
+                "output", longArrayOf(1, 3, -1, -1), "tensor(float)",
+            )
+        )
+        assertFalse(
+            RealEsrganX4PlusContract.accepts(
+                "images", longArrayOf(1, 3, -1, -1), "tensor(float)",
+                "output", longArrayOf(1, 3, -1, -1), "tensor(float)",
             )
         )
     }
