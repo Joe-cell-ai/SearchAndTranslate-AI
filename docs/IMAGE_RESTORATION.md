@@ -80,3 +80,16 @@ that inference is implemented.
 
 Restoration is designed for on-device processing. Reverse-image-search uploads remain a
 separate, user-initiated action and must disclose the selected destination.
+
+
+## Tile output stitching
+
+`RestorationTileStitcher` assembles inferred tile buffers into one output image using the
+non-overlapping core from each planned tile. It validates that every planned tile appears
+exactly once, that each expanded region contains its core, that output tile dimensions
+match the requested scale, and that the final output stays within a caller-supplied pixel
+budget. Only core pixels are copied, so overlap margins are discarded rather than blended.
+This is a pure Kotlin assembly utility; it does not invoke an inference runtime, select the
+actual model tile size, or prove the currently uninspected ONNX archive matches the model
+contract. A backend must still provide correctly cropped/expanded tile outputs from a
+verified model and test boundary behavior against real inference results.
