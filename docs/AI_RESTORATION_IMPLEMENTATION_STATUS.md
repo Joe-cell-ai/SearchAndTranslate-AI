@@ -146,3 +146,13 @@ The feature is ready for a release candidate only when the exact model artifact 
 - The session validates tile membership, duplicate submissions, dimensions, expanded/core bounds, output pixel budget, and missing tiles at completion.
 - Added unit coverage for incremental stitching, incomplete plans, duplicate submissions, overlap cropping, and 4x coordinate scaling.
 - This reduces retained tile-output memory; it does not remove the final full-resolution ARGB canvas or Android bitmap allocation. Device peak-memory and latency validation remain required.
+
+
+## Development batch 4: cancellation and resource lifecycle
+
+- Keep ONNX session options inside the protected try/finally, including configuration, so they are closed if setup or session creation fails.
+- Preserve scoped ownership for each input tensor, inference result, and session; each is closed with Kotlin use even when inference, validation, or cancellation throws.
+- Add a cancellation checkpoint after tile preprocessing and before allocating/publishing the final bitmap.
+- Recycle the newly allocated output bitmap if pixel transfer, cancellation, or the progress callback fails before the bitmap is returned to the caller.
+- The input bitmap remains caller-owned and is never recycled by this engine.
+- Device-level cancellation and native-memory profiling are still required; JVM unit tests cannot prove native ONNX Runtime memory release on a physical device.
