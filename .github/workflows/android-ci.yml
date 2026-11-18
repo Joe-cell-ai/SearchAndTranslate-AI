@@ -42,7 +42,7 @@ jobs:
           mkdir -p "$MODEL_DIR"
           MODEL="$MODEL_DIR/realesrgan-x4plus-fp32.onnx"
           curl --fail --location --retry 3 --retry-all-errors \
-            "https://models.skillsafe.ai/sha256:4851ec156207d271f5328605d0582eeb851e656227da8aca093ced9e60789291/model.onnx" \
+            "https://huggingface.co/skillsafe-ai/realesrgan-x4plus/resolve/107475e49b7d46412cc966481efccc3500955801/model.onnx" \
             --output "$MODEL"
           echo "4851ec156207d271f5328605d0582eeb851e656227da8aca093ced9e60789291  $MODEL" | sha256sum --check
           python -m pip install --disable-pip-version-check onnx
