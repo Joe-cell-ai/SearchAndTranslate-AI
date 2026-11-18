@@ -109,6 +109,12 @@ class MainActivity : ComponentActivity() {
                                         initialPage = pendingSettingsPage,
                                     )
                                 }
+                                "restoration" -> {
+                                    androidx.activity.compose.BackHandler { currentScreen = "home" }
+                                    com.fuzzyfly0.searchandtranslate.ui.RestorationModelsScreen(
+                                        onBack = { currentScreen = "home" },
+                                    )
+                                }
                                 // Status & permissions: a regular settings page inside the app
                                 "status" -> {
                                     androidx.activity.compose.BackHandler { currentScreen = "home" }
@@ -119,6 +125,7 @@ class MainActivity : ComponentActivity() {
                                 else -> {
                                     WobbleHomeScreen(
                                         onOpenDeviceInfo = { currentScreen = "status" },
+                                        onOpenRestoration = { currentScreen = "restoration" },
                                         listState = homeListState,
                                         onOpenSettings = { page ->
                                             pendingSettingsPage = page
