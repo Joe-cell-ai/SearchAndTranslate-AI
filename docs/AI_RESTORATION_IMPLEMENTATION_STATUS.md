@@ -20,7 +20,7 @@ These are infrastructure components. They do not constitute an executable restor
 | Milestone | Status | Evidence / remaining work |
 |---|---|---|
 | Identify upstream Real-ESRGAN candidate and license | Partially verified | Qualcomm's Hugging Face model card identifies Real-ESRGAN-x4plus and BSD-3-Clause metadata. Verify the exact weight artifact's own license and immutable revision before catalog admission. |
-| Inspect the exact ONNX archive | Blocked | The published binary archive could not be retrieved in the current development environment. Tensor names, element types, dimensions, opset, graph operators, and SHA-256 must be read from the exact artifact. |
+| Inspect the exact ONNX artifact | Partially verified / blocked | Hugging Face exposes a standalone 67.1 MB ONNX candidate at immutable revision `bc8925003b8614a8feff5a9f85bb016c324ae5b0`, with published SHA-256 `e25d35c847f81e51a6f89cb939c373c9dc535871a820a4ab87ed1207a457f5c8`. The binary could not be downloaded in this environment, so the checksum is source-published but not independently recomputed; tensor names, element types, dimensions, opset, and graph operators remain uninspected. Do not admit it to the app catalog yet. |
 | Select Android inference runtime | Not started | Do not add a native runtime until graph operators and Android ABI/provider compatibility are known. Measure per-ABI APK impact. |
 | Implement actual Real-ESRGAN inference | Not started | The current `RestorationEngine` is an interface; no concrete ONNX engine is wired. |
 | Model download/install/update/remove | Infrastructure exists | Store is implemented, but there is no production catalog entry until artifact admission passes. |
