@@ -17,6 +17,8 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
 import kotlin.coroutines.coroutineContext
 
@@ -25,18 +27,27 @@ import kotlin.coroutines.coroutineContext
  * its HTTPS transfer completes and its SHA-256 matches the catalog entry.
  */
 class RestorationModelStore(context: Context) {
-    private val modelDirectory = File(context.applicationContext.filesDir, "models/restoration")
+    private val filesDirectory = context.applicationContext.filesDir.canonicalFile
+    private val modelDirectory = File(filesDirectory, "models/restoration")
+
+    private fun ensureSafeModelDirectory() {
+        val expected = File(filesDirectory, "models/restoration").canonicalFile
+        check(modelDirectory.canonicalFile == expected) { "Invalid model storage location" }
+        check(expected.parentFile == File(filesDirectory, "models").canonicalFile) {
+            "Invalid model storage location"
+        }
+    }
 
     suspend fun install(
         model: RestorationModel,
         onProgress: (downloadedBytes: Long, totalBytes: Long) -> Unit = { _, _ -> },
     ): File = withContext(Dispatchers.IO) {
         require(model.validate()) { "Invalid or unverified model metadata" }
-        check(modelDirectory.canonicalFile.path.startsWith(
-            contextCanonicalFilesDir(context = modelDirectory.parentFile?.parentFile)
-        )) { "Invalid model storage location" }
+        ensureSafeModelDirectory()
+        check(modelDirectory.mkdirs() || modelDirectory.isDirectory) {
+            "Could not create model storage directory"
+        }
 
-        modelDirectory.mkdirs()
         val destination = File(modelDirectory, "${model.id}.model")
         val temporary = File(modelDirectory, "${model.id}.download")
         var connection: HttpURLConnection? = null
@@ -48,9 +59,13 @@ class RestorationModelStore(context: Context) {
                 requestMethod = "GET"
             }
             connection.connect()
-            check(connection.responseCode in 200..299) { "Model server returned HTTP ${connection.responseCode}" }
+            check(connection.responseCode in 200..299) {
+                "Model server returned HTTP ${connection.responseCode}"
+            }
             val announcedSize = connection.contentLengthLong
-            check(announcedSize <= model.maxBytes) { "Model exceeds the configured size limit" }
+            check(announcedSize <= model.maxBytes) {
+                "Model exceeds the configured size limit"
+            }
 
             var downloaded = 0L
             FileOutputStream(temporary).use { output ->
@@ -61,17 +76,32 @@ class RestorationModelStore(context: Context) {
                         val count = input.read(buffer)
                         if (count < 0) break
                         downloaded += count
-                        check(downloaded <= model.maxBytes) { "Model exceeds the configured size limit" }
+                        check(downloaded <= model.maxBytes) {
+                            "Model exceeds the configured size limit"
+                        }
                         output.write(buffer, 0, count)
-                        onProgress(downloaded, announcedSize)
+                        onProgress(downloaded, announcedSize.coerceAtLeast(0L))
                     }
                 }
                 output.fd.sync()
             }
+            check(downloaded > 0L) { "Downloaded model is empty" }
+            check(announcedSize < 0L || downloaded == announcedSize) {
+                "Model download ended before the announced size"
+            }
             val digest = sha256(temporary)
-            check(digest.equals(model.sha256, ignoreCase = true)) { "Model checksum verification failed" }
-            if (destination.exists()) check(destination.delete()) { "Could not replace existing model" }
-            check(temporary.renameTo(destination)) { "Could not finalize model download" }
+            check(digest.equals(model.sha256, ignoreCase = true)) {
+                "Model checksum verification failed"
+            }
+
+            // Atomic replacement prevents a failed update from destroying the last
+            // verified model. Both files live in the same app-private directory.
+            Files.move(
+                temporary.toPath(),
+                destination.toPath(),
+                StandardCopyOption.ATOMIC_MOVE,
+                StandardCopyOption.REPLACE_EXISTING,
+            )
             destination
         } catch (error: Throwable) {
             temporary.delete()
@@ -83,11 +113,14 @@ class RestorationModelStore(context: Context) {
 
     fun installedModel(model: RestorationModel): File? {
         if (!model.validate()) return null
-        return File(modelDirectory, "${model.id}.model").takeIf { it.isFile && it.length() in 1..model.maxBytes }
+        ensureSafeModelDirectory()
+        return File(modelDirectory, "${model.id}.model")
+            .takeIf { it.isFile && it.length() in 1..model.maxBytes }
     }
 
     suspend fun remove(model: RestorationModel) = withContext(Dispatchers.IO) {
         require(model.validate())
+        ensureSafeModelDirectory()
         File(modelDirectory, "${model.id}.model").delete()
     }
 
@@ -103,7 +136,4 @@ class RestorationModelStore(context: Context) {
         }
         return digest.digest().joinToString("") { "%02x".format(it) }
     }
-
-    private fun contextCanonicalFilesDir(context: File?): String =
-        requireNotNull(context).canonicalPath
 }
