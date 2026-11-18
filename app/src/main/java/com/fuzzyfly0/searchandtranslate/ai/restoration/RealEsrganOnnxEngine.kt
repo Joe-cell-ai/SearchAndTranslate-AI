@@ -82,7 +82,13 @@ class RealEsrganOnnxEngine(
                     "The selected model does not expose the expected Real-ESRGAN output."
                 }
 
-                val tileOutputs = ArrayList<RestorationTileStitcher.TileOutput>(tiles.size)
+                val stitcher = RestorationTileStitcher.Session(
+                    inputWidth = input.width,
+                    inputHeight = input.height,
+                    scale = scale,
+                    plannedTiles = tiles,
+                    maxOutputPixels = MAX_OUTPUT_PIXELS,
+                )
                 tiles.forEachIndexed { index, tile ->
                     coroutineContext.ensureActive()
                     val tileWidth = tile.expanded.right - tile.expanded.left
@@ -139,24 +145,19 @@ class RealEsrganOnnxEngine(
                         }
                     }
 
-                    tileOutputs += RestorationTileStitcher.TileOutput(
-                        tile = tile,
-                        pixels = tileArgb,
-                        width = expectedWidth,
-                        height = expectedHeight,
+                    stitcher.add(
+                        RestorationTileStitcher.TileOutput(
+                            tile = tile,
+                            pixels = tileArgb,
+                            width = expectedWidth,
+                            height = expectedHeight,
+                        ),
                     )
                     onProgress(0.05f + 0.9f * (index + 1).toFloat() / tiles.size.toFloat())
                 }
 
                 coroutineContext.ensureActive()
-                val stitched = RestorationTileStitcher.stitch(
-                    inputWidth = input.width,
-                    inputHeight = input.height,
-                    scale = scale,
-                    plannedTiles = tiles,
-                    tileOutputs = tileOutputs,
-                    maxOutputPixels = MAX_OUTPUT_PIXELS,
-                )
+                val stitched = stitcher.finish()
                 coroutineContext.ensureActive()
                 Bitmap.createBitmap(outputWidth, outputHeight, Bitmap.Config.ARGB_8888).also {
                     it.setPixels(stitched, 0, outputWidth, 0, 0, outputWidth, outputHeight)
