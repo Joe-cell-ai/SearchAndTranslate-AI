@@ -45,6 +45,7 @@ import androidx.compose.material.icons.rounded.Verified
 import androidx.compose.material.icons.filled.Assistant
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Refresh
