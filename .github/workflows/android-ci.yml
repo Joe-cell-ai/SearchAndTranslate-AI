@@ -102,3 +102,38 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
+
+
+  runtime-footprint:
+    name: Measure ONNX Runtime Android package footprint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Download pinned ONNX Runtime Android AAR (measurement only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="1.31.1"
+          AAR="$RUNNER_TEMP/onnxruntime-android-$VERSION.aar"
+          curl --fail --location --retry 3 --retry-all-errors \
+            "https://repo.maven.apache.org/maven2/com/microsoft/onnxruntime/onnxruntime-android/$VERSION/onnxruntime-android-$VERSION.aar" \
+            --output "$AAR"
+          echo "AAR_BYTES=$(stat -c '%s' "$AAR")"
+          python - "$AAR" <<'PY'
+          import sys, zipfile
+          path = sys.argv[1]
+          with zipfile.ZipFile(path) as archive:
+              entries = [
+                  (item.filename, item.file_size)
+                  for item in archive.infolist()
+                  if item.filename.startswith("jni/") and item.filename.endswith(".so")
+              ]
+          if not entries:
+              raise SystemExit("No Android native libraries found in ONNX Runtime AAR")
+          total = 0
+          for name, size in sorted(entries):
+              total += size
+              print(f"{name}: {size} bytes ({size / 1024 / 1024:.2f} MiB)")
+          print(f"TOTAL_NATIVE_BYTES={total}")
+          print(f"TOTAL_NATIVE_MIB={total / 1024 / 1024:.2f}")
+          PY

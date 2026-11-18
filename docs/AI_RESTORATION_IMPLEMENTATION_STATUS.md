@@ -107,3 +107,14 @@ The feature is ready for a release candidate only when the exact model artifact 
 - The first artifact verification run failed before checksum or ONNX inspection: the publisher registry URL returned HTTP 404.
 - Corrected the CI download source to the model's immutable Hugging Face revision URL, which is documented by the publisher as the same pinned artifact.
 - This correction does not treat the artifact as verified; CI must still download it, recompute the published SHA-256, and inspect the actual ONNX graph.
+
+
+## Development batch 2: ONNX Runtime package footprint gate
+
+- PR #16 merged as commit `592a7ce8d7e53d65cd0aca9f9b4d0a9b414256d7`.
+- GitHub Actions independently downloaded the pinned Real-ESRGAN ONNX file from the immutable Hugging Face revision and verified SHA-256 `4851ec156207d271f5328605d0582eeb851e656227da8aca093ced9e60789291`.
+- The ONNX inspector passed: one float32 input named `input`, one float32 output named `output`, NCHW RGB channel dimension, and opset 17. The graph reports dynamic batch/height/width dimensions; do not describe it as a fixed 128x128 graph. The 128-pixel tile size is an application inference policy, not a static model input constraint.
+- Android unit tests, debug APK assembly, and artifact upload passed in the same CI run.
+- Next gate: measure the pinned ONNX Runtime Android AAR's compressed package and per-ABI native library sizes before adding it to the app. This batch uses ONNX Runtime Android `1.31.1` for measurement only; it does not add the runtime dependency to the APK.
+- Runtime footprint CI is deliberately separate from the app build. The result will guide whether to use the full AAR, a reduced-operator custom build, or a separately installable runtime approach.
+- No model weights or inference runtime are added to the APK in this batch. Actual inference, XNNPACK execution-provider registration, cancellation, native-resource cleanup, and device latency/memory measurements remain pending.
