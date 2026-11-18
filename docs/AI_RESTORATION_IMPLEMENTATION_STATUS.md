@@ -39,6 +39,24 @@ These are infrastructure components. They do not constitute an executable restor
 7. Do not publish a model URL or checksum until the exact artifact is inspected and its provenance is recorded.
 8. Do not describe the feature as working until end-to-end inference and output validation pass.
 
+
+## User-selected model storage (required UX)
+
+All downloadable model families, including Real-ESRGAN and GFPGAN, must use the same storage manager and Android Storage Access Framework (SAF) flow:
+
+1. When the user taps **Download** for a model, launch the system folder picker (`ACTION_OPEN_DOCUMENT_TREE`). Do not ask for broad storage permission.
+2. Persist the granted tree URI permission so the app can continue using that folder after process restarts.
+3. Download into a temporary document in the selected folder, enforce the model's maximum size while streaming, verify the SHA-256, then rename/move it to its final model filename. A failed or cancelled download must not replace an existing verified model.
+4. Keep a small app-private index containing model ID, display name, task, version, checksum, document URI, and selected tree URI. The index is metadata only; model bytes remain in the user-selected folder.
+5. On app start and before inference, confirm the document still exists and matches the expected model metadata. If the user moved/deleted the folder or revoked access, ask them to select the model folder again; never silently download another copy.
+6. **Manage models** must list installed models and their storage sizes, allow the user to delete an individual model, and allow changing the model folder. Deleting a model removes its document from the selected folder and its index entry.
+7. If an inference runtime requires a filesystem path rather than a SAF URI, stage the selected model into app cache only for the active inference session, then delete the temporary copy when the runtime session closes or fails. Do not keep a second permanent private copy.
+8. If the user selects a folder that cannot be written, show a clear error and let them choose another folder.
+
+The system folder picker is intentionally shown at model-download time, not on every app launch. Persisted SAF permission is used for subsequent discovery, inference, and deletion. The app must never scan unrelated folders or access files outside the folder the user selected.
+
+This storage design is shared by every model family and is a release requirement. It keeps model weights out of the APK and lets users reclaim storage by removing models they no longer need.
+
 ## Release gate
 
 The feature is ready for a release candidate only when the exact model artifact is inspected, a compatible Android backend is implemented, automated tests pass, the APK is built for supported ABIs, and on-device inference is measured. If device testing is unavailable in CI, report that explicitly and provide the APK for manual testing rather than claiming device validation.
