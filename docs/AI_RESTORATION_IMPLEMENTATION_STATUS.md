@@ -128,3 +128,12 @@ The feature is ready for a release candidate only when the exact model artifact 
 - Corrected `RealEsrganX4PlusContract` to represent the inspected ONNX graph's dynamic H/W dimensions. The 128px tile edge remains an application execution policy and is not asserted as the model's static tensor size.
 - Added unit coverage for the dynamic NCHW float32 contract and rejection of static/mismatched layouts.
 - This batch does not yet add ONNX Runtime to app dependencies or claim inference is implemented. Next: inspect graph operator inventory, verify XNNPACK provider availability in the Android AAR, and prototype a real session/tensor run on ARM64 before app integration.
+
+
+## Development batch: overlap-tiled Real-ESRGAN execution
+
+- Added a concrete tiled inference path to the ONNX Runtime engine. It plans 256px core tiles with 16px overlap, submits each expanded tile as a dynamic NCHW RGB tensor, validates each 4x output tensor, and stitches only the non-overlapping core.
+- Avoids creating a full-image FP32 input tensor and full-image FP32 output tensor. The existing 1-megapixel input / 16-megapixel output safety limits remain in place.
+- Checks coroutine cancellation between tile executions and reports progress as tiles complete.
+- The final output still requires an ARGB pixel buffer and bitmap allocation; peak native/JVM memory, image quality at tile boundaries, and runtime latency require CI and device measurement.
+- This is not GFPGAN and does not enable face restoration. It also does not claim device validation.
