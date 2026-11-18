@@ -9,6 +9,7 @@
 package com.fuzzyfly0.searchandtranslate.ai.restoration
 
 import android.graphics.Bitmap
+import java.io.File
 import java.net.URL
 
 /** Model metadata is supplied only after the model format, license and checksum are verified. */
@@ -39,6 +40,7 @@ enum class RestorationTask { FACE_RESTORATION, IMAGE_UPSCALING }
 /** A backend must enforce its own input-size/tile limits and release native resources. */
 interface RestorationEngine {
     suspend fun restore(
+        modelFile: File,
         input: Bitmap,
         task: RestorationTask,
         onProgress: (Float) -> Unit = {},
