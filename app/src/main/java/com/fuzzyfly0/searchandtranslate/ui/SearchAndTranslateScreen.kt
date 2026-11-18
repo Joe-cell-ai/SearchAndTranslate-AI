@@ -628,10 +628,20 @@ fun SearchAndTranslateScreen(
     // The circled area (screen rect + bitmap region) kept while Search, Translate or Lens
     // run on it, so closing them with back brings the circle and its chooser back.
     var savedCircle by remember { mutableStateOf<Pair<android.graphics.Rect, android.graphics.Rect>?>(null) }
-    fun saveCircle(rect: android.graphics.Rect?, region: android.graphics.Rect?) {
+    // Keep the exact freehand-masked crop alongside the rectangle/region while a
+    // translation or search temporarily owns the selection. Without this, returning
+    // from translation restores only the bounding rectangle and loses the lasso mask.
+    var savedCircleBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    fun saveCircle(
+        rect: android.graphics.Rect?,
+        region: android.graphics.Rect?,
+        bitmap: Bitmap? = pendingChoiceBitmap,
+    ) {
         savedCircle = if (rect != null && region != null) {
+            savedCircleBitmap = bitmap
             Pair(android.graphics.Rect(rect), android.graphics.Rect(region))
         } else {
+            savedCircleBitmap = null
             null
         }
     }
@@ -640,6 +650,8 @@ fun SearchAndTranslateScreen(
         savedCircle = null
         selectionRect = rect
         pendingChoiceRegion = region
+        pendingChoiceBitmap = savedCircleBitmap
+        savedCircleBitmap = null
         selectedBitmap = null
         isSearching = false
         scope.launch { selectionAnim.snapTo(1f) }
@@ -949,9 +961,11 @@ fun SearchAndTranslateScreen(
     LaunchedEffect(screenshot) {
         if (screenshot != null) {
             savedCircle = null
+            savedCircleBitmap = null
             selectionRect = null
             selectedBitmap = null
             pendingChoiceRegion = null
+            pendingChoiceBitmap = null
             isSearching = false
             currentPathPoints.clear()
             selectionAnim.snapTo(0f)
