@@ -171,6 +171,68 @@ class SafRestorationModelStore(context: Context) {
         deleted
     }
 
+    /** A persisted model record shown by the Manage Models screen. */
+    data class InstalledModelRecord(
+        val id: String,
+        val displayName: String,
+        val task: RestorationTask,
+        val sizeBytes: Long,
+        val documentUri: Uri,
+        val isAccessible: Boolean,
+    )
+
+    /**
+     * Enumerate only records saved by this app. This never scans unrelated files
+     * in the user's selected folder.
+     */
+    fun installedModels(): List<InstalledModelRecord> {
+        val tree = selectedFolder()
+        val hasReadPermission = tree != null && resolver.persistedUriPermissions.any {
+            it.uri == tree && it.isReadPermission
+        }
+        return preferences.all.keys
+            .asSequence()
+            .filter { it.startsWith("model.") && it.endsWith(".uri") }
+            .mapNotNull { uriKey ->
+                val id = uriKey.removePrefix("model.").removeSuffix(".uri")
+                if (!id.matches(Regex("[a-z0-9][a-z0-9._-]{1,63}"))) return@mapNotNull null
+                val uri = preferences.getString(uriKey, null)?.let(Uri::parse)
+                    ?: return@mapNotNull null
+                val task = preferences.getString(modelKey(id, "task"), null)
+                    ?.let { runCatching { RestorationTask.valueOf(it) }.getOrNull() }
+                    ?: return@mapNotNull null
+                val name = preferences.getString(modelKey(id, "name"), id) ?: id
+                val size = preferences.getLong(modelKey(id, "size"), 0L)
+                val accessible = hasReadPermission && runCatching {
+                    resolver.openFileDescriptor(uri, "r")?.use { descriptor ->
+                        descriptor.statSize > 0L && (size <= 0L || descriptor.statSize == size)
+                    } == true
+                }.getOrDefault(false)
+                InstalledModelRecord(id, name, task, size, uri, accessible)
+            }
+            .sortedBy { it.displayName.lowercase() }
+            .toList()
+    }
+
+    /** Delete one app-indexed model without requiring a download URL/catalog entry. */
+    suspend fun removeInstalledModel(id: String): Boolean = withContext(Dispatchers.IO) {
+        require(id.matches(Regex("[a-z0-9][a-z0-9._-]{1,63}"))) { "Invalid model ID" }
+        val raw = preferences.getString(modelKey(id, "uri"), null) ?: return@withContext false
+        val uri = Uri.parse(raw)
+        val deleted = runCatching { DocumentsContract.deleteDocument(resolver, uri) }
+            .getOrDefault(false)
+        if (deleted) {
+            preferences.edit()
+                .remove(modelKey(id, "uri"))
+                .remove(modelKey(id, "sha256"))
+                .remove(modelKey(id, "size"))
+                .remove(modelKey(id, "task"))
+                .remove(modelKey(id, "name"))
+                .apply()
+        }
+        deleted
+    }
+
     /** Stage a SAF document only for the duration of an engine session. */
     suspend fun <T> withTemporaryModelFile(model: RestorationModel, block: suspend (File) -> T): T =
         withContext(Dispatchers.IO) {
