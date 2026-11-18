@@ -19,14 +19,23 @@ import kotlin.coroutines.coroutineContext
 /**
  * Real-ESRGAN x4plus FP32 inference using ONNX Runtime CPU.
  *
- * The model stays in the user-selected SAF folder; the runner stages it in cache
- * only for this call. To keep peak memory bounded on mobile, this first backend
- * intentionally accepts images up to 1 megapixel (4x output = 16 megapixels).
- * Larger images are rejected with an actionable message rather than risking OOM.
+ * Inference is performed on overlapping tiles. Only each tile's non-overlapping
+ * core is copied into the final bitmap, avoiding seams without retaining a
+ * full-image FP32 tensor or a full-image FP32 model output.
+ *
+ * The model remains in user-selected SAF storage. The conservative 1MP input
+ * and 16MP output limits are retained for mobile memory safety.
  */
 class RealEsrganOnnxEngine(
     private val maxInputPixels: Long = DEFAULT_MAX_INPUT_PIXELS,
     private val intraOpThreads: Int = 2,
+    private val policy: RestorationExecutionPolicy = RestorationExecutionPolicy(
+        maxInputPixels = DEFAULT_MAX_INPUT_PIXELS,
+        maxOutputPixels = MAX_OUTPUT_PIXELS,
+        maxTileEdge = TILE_EDGE,
+        tileOverlap = TILE_OVERLAP,
+        maxTiles = MAX_TILES,
+    ),
 ) : RestorationEngine {
     init {
         require(maxInputPixels in 1..DEFAULT_MAX_INPUT_PIXELS)
@@ -42,16 +51,24 @@ class RealEsrganOnnxEngine(
         require(task == RestorationTask.IMAGE_UPSCALING) {
             "This model supports image upscaling only. Face restoration needs the separate GFPGAN model."
         }
-        require(modelFile.isFile && modelFile.length() > 0L) { "The verified Real-ESRGAN model file is missing." }
+        require(modelFile.isFile && modelFile.length() > 0L) {
+            "The verified Real-ESRGAN model file is missing."
+        }
         val inputPixels = input.width.toLong() * input.height.toLong()
         require(inputPixels in 1..maxInputPixels) {
-            "This first on-device model supports images up to 1 megapixel. Choose a smaller image."
+            "This on-device model supports images up to 1 megapixel. Choose a smaller image."
         }
-        val outputWidth = Math.multiplyExact(input.width, RealEsrganX4PlusContract.UPSCALE_FACTOR)
-        val outputHeight = Math.multiplyExact(input.height, RealEsrganX4PlusContract.UPSCALE_FACTOR)
-        val outputPixels = outputWidth.toLong() * outputHeight.toLong()
-        require(outputPixels <= MAX_OUTPUT_PIXELS) { "The restored image would exceed the memory limit." }
+
+        val scale = RealEsrganX4PlusContract.UPSCALE_FACTOR
+        val outputWidth = Math.multiplyExact(input.width, scale)
+        val outputHeight = Math.multiplyExact(input.height, scale)
+        policy.validateOutput(outputWidth, outputHeight)
+        val tiles = policy.planTiles(input.width, input.height)
         coroutineContext.ensureActive()
+
+        val sourcePixels = IntArray(Math.toIntExact(inputPixels))
+        input.getPixels(sourcePixels, 0, input.width, 0, 0, input.width, input.height)
+        onProgress(0.02f)
 
         val environment = OrtEnvironment.getEnvironment()
         val options = OrtSession.SessionOptions()
@@ -65,58 +82,85 @@ class RealEsrganOnnxEngine(
                     "The selected model does not expose the expected Real-ESRGAN output."
                 }
 
-                val argb = IntArray(input.width * input.height)
-                input.getPixels(argb, 0, input.width, 0, 0, input.width, input.height)
-                val plane = input.width * input.height
-                val nchw = FloatArray(plane * 3)
-                for (index in 0 until plane) {
-                    val pixel = argb[index]
-                    nchw[index] = ((pixel ushr 16) and 0xff) / 255f
-                    nchw[plane + index] = ((pixel ushr 8) and 0xff) / 255f
-                    nchw[plane * 2 + index] = (pixel and 0xff) / 255f
-                }
-                coroutineContext.ensureActive()
-                onProgress(0.05f)
+                val tileOutputs = ArrayList<RestorationTileStitcher.TileOutput>(tiles.size)
+                tiles.forEachIndexed { index, tile ->
+                    coroutineContext.ensureActive()
+                    val tileWidth = tile.expanded.right - tile.expanded.left
+                    val tileHeight = tile.expanded.bottom - tile.expanded.top
+                    val nchw = toNchw(
+                        pixels = sourcePixels,
+                        imageWidth = input.width,
+                        region = tile.expanded,
+                    )
+                    val expectedWidth = Math.multiplyExact(tileWidth, scale)
+                    val expectedHeight = Math.multiplyExact(tileHeight, scale)
+                    val inputShape = longArrayOf(1L, 3L, tileHeight.toLong(), tileWidth.toLong())
 
-                val shape = longArrayOf(1L, 3L, input.height.toLong(), input.width.toLong())
-                OnnxTensor.createTensor(environment, FloatBuffer.wrap(nchw), shape).use { tensor ->
-                    session.run(mapOf(RealEsrganX4PlusContract.INPUT_NAME to tensor)).use { result ->
-                        coroutineContext.ensureActive()
-                        val output = result.get(RealEsrganX4PlusContract.OUTPUT_NAME)
-                            .orElseThrow { IllegalStateException("Real-ESRGAN returned no output tensor.") }
-                        require(output is OnnxTensor) { "Real-ESRGAN returned a non-tensor output." }
-                        val outputShape = output.info.shape
-                        require(
-                            outputShape.size == 4 &&
-                                outputShape[0] == 1L &&
-                                outputShape[1] == 3L &&
-                                outputShape[2] == outputHeight.toLong() &&
-                                outputShape[3] == outputWidth.toLong()
-                        ) { "The model output dimensions do not match 4x RGB upscaling." }
-                        val buffer = output.floatBuffer
-                        val expected = outputPixels * 3L
-                        require(expected <= Int.MAX_VALUE && buffer.remaining().toLong() == expected) {
-                            "The model output tensor has an unexpected size."
+                    val tileArgb = OnnxTensor.createTensor(
+                        environment,
+                        FloatBuffer.wrap(nchw),
+                        inputShape,
+                    ).use { tensor ->
+                        session.run(mapOf(RealEsrganX4PlusContract.INPUT_NAME to tensor)).use { result ->
+                            coroutineContext.ensureActive()
+                            val output = result.get(RealEsrganX4PlusContract.OUTPUT_NAME)
+                                .orElseThrow {
+                                    IllegalStateException("Real-ESRGAN returned no output tensor.")
+                                }
+                            require(output is OnnxTensor) {
+                                "Real-ESRGAN returned a non-tensor output."
+                            }
+                            val shape = output.info.shape
+                            require(
+                                shape.size == 4 &&
+                                    shape[0] == 1L &&
+                                    shape[1] == 3L &&
+                                    shape[2] == expectedHeight.toLong() &&
+                                    shape[3] == expectedWidth.toLong()
+                            ) {
+                                "The model output dimensions do not match 4x tile upscaling."
+                            }
+                            val expectedValues = expectedWidth.toLong() * expectedHeight.toLong() * 3L
+                            require(expectedValues <= Int.MAX_VALUE) {
+                                "The inferred tile exceeds the supported tensor size."
+                            }
+                            val buffer = output.floatBuffer
+                            require(buffer.remaining().toLong() == expectedValues) {
+                                "The model output tensor has an unexpected size."
+                            }
+                            val values = FloatArray(expectedValues.toInt())
+                            buffer.get(values)
+                            RgbFloatTensorPostprocessor.toArgb(
+                                values,
+                                expectedWidth,
+                                expectedHeight,
+                                RgbFloatTensorPostprocessor.Layout.NCHW,
+                            )
                         }
-                        val values = FloatArray(expected.toInt())
-                        buffer.get(values)
-                        coroutineContext.ensureActive()
-                        onProgress(0.9f)
-                        val pixels = RgbFloatTensorPostprocessor.toArgb(
-                            values,
-                            outputWidth,
-                            outputHeight,
-                            RgbFloatTensorPostprocessor.Layout.NCHW,
-                        )
-                        val restored = Bitmap.createBitmap(
-                            outputWidth,
-                            outputHeight,
-                            Bitmap.Config.ARGB_8888,
-                        )
-                        restored.setPixels(pixels, 0, outputWidth, 0, 0, outputWidth, outputHeight)
-                        onProgress(0.99f)
-                        restored
                     }
+
+                    tileOutputs += RestorationTileStitcher.TileOutput(
+                        tile = tile,
+                        pixels = tileArgb,
+                        width = expectedWidth,
+                        height = expectedHeight,
+                    )
+                    onProgress(0.05f + 0.9f * (index + 1).toFloat() / tiles.size.toFloat())
+                }
+
+                coroutineContext.ensureActive()
+                val stitched = RestorationTileStitcher.stitch(
+                    inputWidth = input.width,
+                    inputHeight = input.height,
+                    scale = scale,
+                    plannedTiles = tiles,
+                    tileOutputs = tileOutputs,
+                    maxOutputPixels = MAX_OUTPUT_PIXELS,
+                )
+                coroutineContext.ensureActive()
+                Bitmap.createBitmap(outputWidth, outputHeight, Bitmap.Config.ARGB_8888).also {
+                    it.setPixels(stitched, 0, outputWidth, 0, 0, outputWidth, outputHeight)
+                    onProgress(0.99f)
                 }
             }
         } catch (cancelled: CancellationException) {
@@ -126,8 +170,34 @@ class RealEsrganOnnxEngine(
         }
     }
 
+    private fun toNchw(
+        pixels: IntArray,
+        imageWidth: Int,
+        region: RestorationRect,
+    ): FloatArray {
+        val width = region.right - region.left
+        val height = region.bottom - region.top
+        val plane = Math.multiplyExact(width, height)
+        val output = FloatArray(Math.multiplyExact(plane, 3))
+        for (y in 0 until height) {
+            val sourceOffset = (region.top + y) * imageWidth + region.left
+            val rowOffset = y * width
+            for (x in 0 until width) {
+                val pixel = pixels[sourceOffset + x]
+                val offset = rowOffset + x
+                output[offset] = ((pixel ushr 16) and 0xff) / 255f
+                output[plane + offset] = ((pixel ushr 8) and 0xff) / 255f
+                output[plane * 2 + offset] = (pixel and 0xff) / 255f
+            }
+        }
+        return output
+    }
+
     companion object {
         const val DEFAULT_MAX_INPUT_PIXELS = 1_000_000L
         const val MAX_OUTPUT_PIXELS = 16_000_000L
+        const val TILE_EDGE = 256
+        const val TILE_OVERLAP = 16
+        const val MAX_TILES = 512
     }
 }
