@@ -60,6 +60,18 @@ object ImageSearchUploader {
      */
     fun uploadPage(engine: SearchEngine, image: EncodedImage, language: String): Pair<String, String> {
         // fileField: multipart file input; textFields: plain fields (value may be the base64 data).
+        engine.website?.let { site ->
+            val html = """
+                <!doctype html><html><head><meta name="viewport" content="width=device-width"></head>
+                <body style="font-family:sans-serif;padding:24px">
+                  <h2>${engine.name}</h2>
+                  <p>Continue to this provider's website. Review its privacy terms and choose an image to upload there if you wish.</p>
+                  <p>Your image is not automatically sent to this provider by this app.</p>
+                  <a href="$site" style="display:inline-block;padding:14px 20px;background:#1769e0;color:white;border-radius:10px;text-decoration:none">Open ${engine.name}</a>
+                </body></html>
+            """.trimIndent()
+            return site to html
+        }
         val (base, action, fileField, textFields) = when (engine) {
             SearchEngine.Google -> Quad(
                 "https://lens.google.com/",
@@ -79,6 +91,7 @@ object ImageSearchUploader {
                 "image",
                 emptyMap(),
             )
+            else -> error("Provider website should have been handled before upload mapping")
         }
         if (engine == SearchEngine.TinEye) return base to tinEyePage(image)
         val fields = textFields.entries.joinToString("") { (name, value) ->
