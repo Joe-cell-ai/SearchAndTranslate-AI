@@ -8,8 +8,6 @@
  */
 package com.fuzzyfly0.searchandtranslate.ai.restoration
 
-import android.graphics.Rect
-
 /** Conservative memory limits, independent of a particular inference runtime. */
 data class RestorationExecutionPolicy(
     val maxInputPixels: Long = DEFAULT_MAX_INPUT_PIXELS,
@@ -62,8 +60,8 @@ data class RestorationExecutionPolicy(
                     val bottom = minOf(height, top + maxTileEdge)
                     add(
                         RestorationTile(
-                            core = Rect(left, top, right, bottom),
-                            expanded = Rect(
+                            core = RestorationRect(left, top, right, bottom),
+                            expanded = RestorationRect(
                                 maxOf(0, left - tileOverlap),
                                 maxOf(0, top - tileOverlap),
                                 minOf(width, right + tileOverlap),
@@ -90,6 +88,8 @@ data class RestorationExecutionPolicy(
 }
 
 data class RestorationTile(
-    val core: Rect,
-    val expanded: Rect,
+    val core: RestorationRect,
+    val expanded: RestorationRect,
 )
+
+data class RestorationRect(val left: Int, val top: Int, val right: Int, val bottom: Int)
