@@ -133,6 +133,7 @@ fun WobbleHomeScreen(
     wobbleEvent: Int = 0,
     contentPadding: PaddingValues = PaddingValues(0.dp),
     onOpenSettings: ((String) -> Unit)? = null,
+    onOpenRestoration: (() -> Unit)? = null,
     // Opens straight on the Launch methods page (e.g. nothing could capture the screen).
     openLaunchMethods: Boolean = false,
     onLaunchMethodsOpened: () -> Unit = {},
@@ -564,6 +565,21 @@ fun WobbleHomeScreen(
                         )
                     }
                     Spacer(modifier = Modifier.height(14.dp))
+                    if (onOpenRestoration != null) {
+                        HomeBubble(GroupPos.Single) {
+                            HomeLinkRow(
+                                icon = Icons.Default.Image,
+                                title = "AI restoration",
+                                iconContainer = MaterialTheme.colorScheme.tertiaryContainer,
+                                iconColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                                subtitle = "Optional on-device image enhancement models",
+                                onClick = {
+                                    WobbleHaptics.performUIHaptic(view)
+                                    onOpenRestoration()
+                                },
+                            )
+                        }
+                    }
                     HomeBubble(GroupPos.Single) {
                         HomeLinkRow(
                             icon = Icons.Default.Info,
