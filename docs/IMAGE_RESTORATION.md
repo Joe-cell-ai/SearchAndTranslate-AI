@@ -7,11 +7,11 @@ only then exposes the completed model file.
 
 ## Runtime boundary
 
-`RestorationEngine` is the inference boundary. A concrete backend must be added only
+`RestorationEngine` is the inference boundary and receives the verified model file explicitly. `RestorationEngineRunner` checks model metadata, requires an installed model, applies input/output pixel budgets, preserves coroutine cancellation, clamps progress to a monotonic 0–99% until output validation, and rejects an output bitmap that aliases the input. A concrete backend must be added only
 after a compatible Android model export and runtime have been validated on arm64 Android.
 It must implement face restoration and/or image upscaling without changing the existing
 OCR, translation, or image-search pipelines. It must also enforce bounded input dimensions,
-tile large images, report progress, and release native resources on cancellation/failure.
+tile large images using `RestorationExecutionPolicy`, report progress, and release native resources on cancellation/failure. The runner does not yet provide a concrete inference backend or a user-facing restoration screen.
 
 `RestorationExecutionPolicy` provides conservative input/output pixel budgets and a
 tile planner. Tile plans contain a non-overlapping core and an expanded inference region
