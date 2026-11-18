@@ -622,6 +622,8 @@ fun SearchAndTranslateScreen(
     // "Ask" circle action: the circled area (bitmap px) waiting for the user to pick
     // Search or Translate in the chooser shown next to the selection. Null = no chooser.
     var pendingChoiceRegion by remember { mutableStateOf<android.graphics.Rect?>(null) }
+    // Exact masked crop for Search in the Search | Translate chooser.
+    var pendingChoiceBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
     // The circled area (screen rect + bitmap region) kept while Search, Translate or Lens
     // run on it, so closing them with back brings the circle and its chooser back.
@@ -682,6 +684,7 @@ fun SearchAndTranslateScreen(
 
         // Clear previous state if starting new draw
         currentPathPoints.clear()
+        pendingChoiceBitmap = null
         currentPathPoints.add(offset)
         selectionRect = null
         pendingChoiceRegion = null
@@ -715,6 +718,7 @@ fun SearchAndTranslateScreen(
     /** The selected area: the searched crop, or the circled area still waiting in the chooser. */
     fun selectionBitmapOrNull(): Bitmap? {
         selectedBitmap?.let { return it }
+        pendingChoiceBitmap?.let { return it }
         val region = pendingChoiceRegion ?: return null
         val bmp = screenshot ?: return null
         return ImageUtils.cropBitmap(bmp, region)
@@ -898,6 +902,11 @@ fun SearchAndTranslateScreen(
                         UIPreferences.CIRCLE_ACTION_ASK -> {
                             if (region.width() > 10 && region.height() > 10) {
                                 selectionRect = rect
+                                val askPoints = currentPathPoints.toList()
+                                val lassoPoints = askPoints.map { point ->
+                                    Pair(t.unmapX(point.x) - region.left, t.unmapY(point.y) - region.top)
+                                }
+                                pendingChoiceBitmap = ImageUtils.cropBitmapLasso(bmp, region, lassoPoints)
                                 currentPathPoints.clear()
                                 pendingChoiceRegion = region
                                 scope.launch { selectionAnim.animateTo(1f, tween(600)) }
@@ -908,6 +917,7 @@ fun SearchAndTranslateScreen(
                 }
                 selectionRect = rect
                 val completedLassoPoints = currentPathPoints.toList()
+                pendingChoiceBitmap = null
                 currentPathPoints.clear() // Hide the drawn lasso
                 if (bmp != null) {
                     val t = fitMapping(viewW.toFloat(), viewH.toFloat(), bmp.width.toFloat(), bmp.height.toFloat())
@@ -1970,7 +1980,7 @@ fun SearchAndTranslateScreen(
                                 if (circleShown && circleRegion != null && shot != null) {
                                     saveCircle(selectionRect, circleRegion)
                                     pendingChoiceRegion = null
-                                    selectedBitmap = ImageUtils.cropBitmap(shot, circleRegion)
+                                    selectedBitmap = pendingChoiceBitmap ?: ImageUtils.cropBitmap(shot, circleRegion)
                                     isSearching = true
                                     return@BottomBarButton
                                 }
