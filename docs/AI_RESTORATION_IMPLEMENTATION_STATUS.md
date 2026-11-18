@@ -23,8 +23,8 @@ These are infrastructure components. They do not constitute an executable restor
 | Inspect the exact ONNX artifact | Partially verified / blocked | Hugging Face exposes a standalone 67.1 MB ONNX candidate at immutable revision `bc8925003b8614a8feff5a9f85bb016c324ae5b0`, with published SHA-256 `e25d35c847f81e51a6f89cb939c373c9dc535871a820a4ab87ed1207a457f5c8`. The binary could not be downloaded in this environment, so the checksum is source-published but not independently recomputed; tensor names, element types, dimensions, opset, and graph operators remain uninspected. Do not admit it to the app catalog yet. |
 | Select Android inference runtime | Not started | Do not add a native runtime until graph operators and Android ABI/provider compatibility are known. Measure per-ABI APK impact. |
 | Implement actual Real-ESRGAN inference | Not started | The current `RestorationEngine` is an interface; no concrete ONNX engine is wired. |
-| Model download/install/update/remove | Partially implemented | Added `SafRestorationModelStore`: persisted user-selected SAF folder, bounded HTTPS download, streaming SHA-256 verification, URI index, delete, and temporary cache staging for inference. Needs Android build/provider testing, full Manage Models UI, folder-reselection UX, and verification across document providers. The legacy app-private store remains for compatibility; production UI must use SAF. |
-| User-facing restoration flow | Not started | Add the folder-picker launcher, model download/manage screen, explicit image selection, before/after comparison, progress, cancellation, and errors without changing existing search/translation flows. |
+| Model download/install/update/remove | Partially implemented | Added `SafRestorationModelStore`: persisted user-selected SAF folder, bounded HTTPS download, streaming SHA-256 verification, URI index, delete, and temporary cache staging for inference. The current development batch adds app-indexed installed-model inventory, size/access status, and delete controls. Still needs Android build/provider testing, folder-access recovery UX, and verification across document providers. The legacy app-private store remains for compatibility; production UI must use SAF. |
+| User-facing restoration flow | Partially implemented | Home entry and SAF folder setup are merged. This development batch adds installed-model listing, displayed storage size/access state, and per-model deletion. Image selection, before/after comparison, progress, cancellation, restoration errors, and a verified downloadable catalog remain outstanding. |
 | GFPGAN | Not started | Treat as a separate optional model and inference pipeline; verify its own license, export, runtime, and memory requirements. |
 | Device performance and quality validation | Not started | Requires real model inference on a Pixel-class arm64 device. Qualcomm NPU figures are not evidence of Pixel CPU performance. |
 
@@ -60,3 +60,12 @@ This storage design is shared by every model family and is a release requirement
 ## Latest implementation commits\n\n- `65eb75b`: add SAF-backed optional model storage with persisted folder permission, bounded downloads, checksum validation, model URI metadata, deletion, and temporary cache staging.\n- `f94eadf`: allow the inference runner to use SAF models and scope the staged file to the inference call.\n- `21fb81a`: create model documents under the selected tree's root document URI.\n\nThese changes have not yet passed Android CI and are not device-validated. The SAF model store is infrastructure only; no folder-picker UI or production inference engine is wired yet.\n\n## Release gate
 
 The feature is ready for a release candidate only when the exact model artifact is inspected, a compatible Android backend is implemented, automated tests pass, the APK is built for supported ABIs, and on-device inference is measured. If device testing is unavailable in CI, report that explicitly and provide the APK for manual testing rather than claiming device validation.
+
+
+## Latest development batch (PR #12)
+
+- Adds a SAF-index-backed inventory API that lists only model records registered by this app; it does not scan unrelated user folders.
+- Displays registered model name, task, stored size, and whether the selected folder/model document remains accessible.
+- Adds per-model deletion from the Manage Models screen and refreshes the inventory after folder changes or deletion.
+- Does not add model binaries, URLs, checksums, or an inference dependency. Downloads remain disabled pending independent artifact and runtime verification.
+- Android CI and document-provider behavior must pass before this batch is considered verified.
