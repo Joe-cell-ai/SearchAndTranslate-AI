@@ -118,3 +118,13 @@ The feature is ready for a release candidate only when the exact model artifact 
 - Next gate: measure the pinned ONNX Runtime Android AAR's compressed package and per-ABI native library sizes before adding it to the app. This batch uses ONNX Runtime Android `1.31.1` for measurement only; it does not add the runtime dependency to the APK.
 - Runtime footprint CI is deliberately separate from the app build. The result will guide whether to use the full AAR, a reduced-operator custom build, or a separately installable runtime approach.
 - No model weights or inference runtime are added to the APK in this batch. Actual inference, XNNPACK execution-provider registration, cancellation, native-resource cleanup, and device latency/memory measurements remain pending.
+
+
+## Development batch 3: AI Vision icon and runtime contract correction
+
+- PR #17 merged as `84cecd8f7db4c77d402fe8756c47b54d8e55b021`.
+- Runtime footprint measurement: ONNX Runtime Android 1.31.1 AAR is 55,138,794 bytes (52.59 MiB). The ARM64 native libraries total 34,331,256 bytes (32.74 MiB): `libonnxruntime.so` 32.62 MiB plus JNI bridge 0.12 MiB. This is a meaningful app-size cost and must be evaluated against a reduced-operator build before final integration.
+- Replaced the previous provisional launcher artwork with the approved Concept A direction: AI image-search lens plus translation marks, on a deep indigo background. Adaptive icon layers retain safe margins; visual/device launcher validation remains required.
+- Corrected `RealEsrganX4PlusContract` to represent the inspected ONNX graph's dynamic H/W dimensions. The 128px tile edge remains an application execution policy and is not asserted as the model's static tensor size.
+- Added unit coverage for the dynamic NCHW float32 contract and rejection of static/mismatched layouts.
+- This batch does not yet add ONNX Runtime to app dependencies or claim inference is implemented. Next: inspect graph operator inventory, verify XNNPACK provider availability in the Android AAR, and prototype a real session/tensor run on ARM64 before app integration.
