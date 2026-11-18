@@ -53,6 +53,7 @@ import com.fuzzyfly0.searchandtranslate.ai.restoration.RestorationEngineRunner
 import com.fuzzyfly0.searchandtranslate.ai.restoration.RealEsrganOnnxEngine
 import com.fuzzyfly0.searchandtranslate.ai.restoration.SafRestorationModelStore
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -241,6 +242,8 @@ fun RestorationModelsScreen(onBack: () -> Unit) {
                         val output = runner.run(realEsrganModel, input) { value -> progress = value }
                         restoredImage = output
                         message = "Restoration complete. The image has not been uploaded."
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
                     } catch (error: Throwable) {
                         message = error.message ?: "Restoration failed."
                     } finally {
