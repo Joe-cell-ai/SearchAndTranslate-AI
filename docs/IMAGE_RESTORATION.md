@@ -11,7 +11,8 @@ only then exposes the completed model file.
 after a compatible Android model export and runtime have been validated on arm64 Android.
 It must implement face restoration and/or image upscaling without changing the existing
 OCR, translation, or image-search pipelines. It must also enforce bounded input dimensions,
-tile large images using `RestorationExecutionPolicy`, report progress, and release native resources on cancellation/failure. The runner does not yet provide a concrete inference backend or a user-facing restoration screen.
+tile large images using `RestorationExecutionPolicy`, report progress, and release native
+resources on cancellation/failure. The runner does not yet provide a concrete inference backend or a user-facing restoration screen.
 
 `RestorationExecutionPolicy` provides conservative input/output pixel budgets and a
 tile planner. Tile plans contain a non-overlapping core and an expanded inference region
@@ -38,6 +39,12 @@ It converts ARGB pixels to planar RGB float values in [0, 1] and replicates the 
 edge pixel for partial tiles. It deliberately does not perform inference, output conversion,
 or tile stitching. Those steps must be tested against the actual model archive before
 enabling the feature.
+
+The next output-stage utility converts an explicitly described single-image RGB float
+tensor into an opaque ARGB pixel buffer. The caller must supply width, height, and NCHW
+or NHWC layout; the utility validates exact buffer length, rejects NaN/infinity, and clamps
+finite channel values to [0, 1]. It does not infer the ONNX graph's tensor layout or upscale
+factor. It is standalone pure Kotlin groundwork, not an inference backend or tile stitcher.
 
 ## Android runtime evaluation
 
