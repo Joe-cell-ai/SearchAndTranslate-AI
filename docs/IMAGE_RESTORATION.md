@@ -13,6 +13,26 @@ It must implement face restoration and/or image upscaling without changing the e
 OCR, translation, or image-search pipelines. It must also enforce bounded input dimensions,
 tile large images, report progress, and release native resources on cancellation/failure.
 
+`RestorationExecutionPolicy` provides conservative input/output pixel budgets and a
+tile planner. Tile plans contain a non-overlapping core and an expanded inference region
+with overlap; a backend must crop inferred results to each core before stitching. The
+planner is not itself an inference implementation and does not claim that a model can
+currently run in the app.
+
+## Android runtime evaluation
+
+The initial runtime candidate is ONNX Runtime for Android because an Android AAR and
+official Android deployment documentation are available. A full ONNX Runtime AAR may
+increase APK size materially, so it is not added to the app dependency graph yet. A
+reduced ONNX Runtime Mobile package requires ORT-format models and a matching reduced
+operator configuration; it is not a drop-in replacement for arbitrary ONNX exports.
+
+Real-ESRGAN x4plus has an independently published Qualcomm ONNX export option, including
+a quantized variant. Before adoption, the exact model archive, license/weight provenance,
+input/output tensor contract, Android ABI support, native library footprint, and measured
+peak memory must be verified. The first supported model should be selected only after a
+Pixel-class arm64 device test. GFPGAN remains a separate model/backend admission task.
+
 ## Model admission checklist
 
 Before adding a model to the in-app catalog, verify and record:
@@ -25,8 +45,8 @@ Before adding a model to the in-app catalog, verify and record:
 - A small test image and expected output dimensions.
 
 No model URL or checksum is published in the catalog until those checks pass. The download
-store is infrastructure only; it does not claim that a model is currently available or that
-inference is implemented.
+store is infrastructure only; it does not claim that a model is currently available or
+that inference is implemented.
 
 ## Privacy
 
