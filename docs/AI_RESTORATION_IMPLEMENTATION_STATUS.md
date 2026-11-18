@@ -156,3 +156,12 @@ The feature is ready for a release candidate only when the exact model artifact 
 - Recycle the newly allocated output bitmap if pixel transfer, cancellation, or the progress callback fails before the bitmap is returned to the caller.
 - The input bitmap remains caller-owned and is never recycled by this engine.
 - Device-level cancellation and native-memory profiling are still required; JVM unit tests cannot prove native ONNX Runtime memory release on a physical device.
+
+
+## Development batch 5: restoration boundary and validation tests
+
+- Added exact-multiple tile-grid coverage to ensure no empty trailing tiles are generated.
+- Added odd-sized image coverage checks that prove every source pixel belongs to exactly one output core.
+- Added edge assertions for expanded inference regions and single-pixel images.
+- Added negative input/output dimension rejection tests.
+- These are deterministic JVM unit tests; ONNX Runtime native behavior and real-device image quality still require device validation.
