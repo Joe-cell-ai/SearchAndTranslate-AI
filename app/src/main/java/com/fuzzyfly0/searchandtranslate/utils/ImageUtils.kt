@@ -55,6 +55,43 @@ object ImageUtils {
         }
     }
 
+    /**
+     * Crops a freehand lasso selection. Pixels outside the user's closed selection
+     * are rendered white so the existing JPEG-based image-search upload remains valid.
+     * Coordinates are local to [rect] in source-bitmap pixels.
+     */
+    fun cropBitmapLasso(
+        source: Bitmap,
+        rect: Rect,
+        points: List<Pair<Float, Float>>,
+    ): Bitmap {
+        val left = rect.left.coerceIn(0, source.width)
+        val top = rect.top.coerceIn(0, source.height)
+        val right = rect.right.coerceIn(left, source.width)
+        val bottom = rect.bottom.coerceIn(top, source.height)
+        val width = right - left
+        val height = bottom - top
+        if (width <= 1 || height <= 1 || points.size < 3) {
+            return cropBitmap(source, rect)
+        }
+
+        val output = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(output)
+        canvas.drawColor(android.graphics.Color.WHITE)
+        val lasso = android.graphics.Path().apply {
+            moveTo(points.first().first.coerceIn(0f, width.toFloat()), points.first().second.coerceIn(0f, height.toFloat()))
+            points.drop(1).forEach { (x, y) ->
+                lineTo(x.coerceIn(0f, width.toFloat()), y.coerceIn(0f, height.toFloat()))
+            }
+            close()
+        }
+        canvas.save()
+        canvas.clipPath(lasso)
+        canvas.drawBitmap(source, -left.toFloat(), -top.toFloat(), android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG or android.graphics.Paint.FILTER_BITMAP_FLAG))
+        canvas.restore()
+        return output
+    }
+
     fun resizeBitmap(source: Bitmap, maxLength: Int): Bitmap {
         try {
             if (source.width <= maxLength && source.height <= maxLength) return source
