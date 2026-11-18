@@ -72,13 +72,7 @@ class SafRestorationModelStore(context: Context) {
 
         var connection: HttpURLConnection? = null
         try {
-            connection = (URL(model.downloadUrl).openConnection() as HttpURLConnection).apply {
-                connectTimeout = 15_000
-                readTimeout = 30_000
-                instanceFollowRedirects = false
-                requestMethod = "GET"
-            }
-            connection.connect()
+            connection = openVerifiedHttpsConnection(model.downloadUrl)
             check(connection.responseCode in 200..299) {
                 "Model server returned HTTP ${connection.responseCode}"
             }
@@ -163,13 +157,17 @@ class SafRestorationModelStore(context: Context) {
         val deleted = raw?.let { runCatching {
             DocumentsContract.deleteDocument(resolver, Uri.parse(it))
         }.getOrDefault(false) } ?: false
-        preferences.edit()
-            .remove(modelKey(model.id, "uri"))
-            .remove(modelKey(model.id, "sha256"))
-            .remove(modelKey(model.id, "size"))
-            .remove(modelKey(model.id, "task"))
-            .remove(modelKey(model.id, "name"))
-            .apply()
+        // Keep the index entry if the provider refused deletion. Otherwise the
+        // user would lose the only in-app reference to a model still on disk.
+        if (deleted) {
+            preferences.edit()
+                .remove(modelKey(model.id, "uri"))
+                .remove(modelKey(model.id, "sha256"))
+                .remove(modelKey(model.id, "size"))
+                .remove(modelKey(model.id, "task"))
+                .remove(modelKey(model.id, "name"))
+                .apply()
+        }
         deleted
     }
 
@@ -212,6 +210,37 @@ class SafRestorationModelStore(context: Context) {
             }
         }
 
+    /**
+     * Follow only HTTPS redirects and reject credentials or protocol downgrade.
+     * Some reputable model hosts use short-lived HTTPS redirect URLs for large files.
+     */
+    private fun openVerifiedHttpsConnection(initialUrl: String): HttpURLConnection {
+        var target = URL(initialUrl)
+        repeat(MAX_REDIRECTS + 1) { hop ->
+            require(target.protocol.equals("https", ignoreCase = true) && target.userInfo == null) {
+                "Model downloads must use HTTPS without embedded credentials"
+            }
+            val connection = (target.openConnection() as HttpURLConnection).apply {
+                connectTimeout = 15_000
+                readTimeout = 30_000
+                instanceFollowRedirects = false
+                requestMethod = "GET"
+            }
+            connection.connect()
+            val status = connection.responseCode
+            if (status in 200..299) return connection
+            val location = if (status in REDIRECT_CODES) {
+                connection.getHeaderField("Location")
+            } else null
+            connection.disconnect()
+            if (location == null || hop == MAX_REDIRECTS) {
+                error("Model server returned HTTP $status")
+            }
+            target = URL(target, location)
+        }
+        error("Too many model download redirects")
+    }
+
     private fun findChild(treeUri: Uri, displayName: String): Uri? = runCatching {
         val treeId = DocumentsContract.getTreeDocumentId(treeUri)
         val children = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, treeId)
@@ -238,5 +267,7 @@ class SafRestorationModelStore(context: Context) {
 
     private companion object {
         const val KEY_TREE_URI = "selected_tree_uri"
+        const val MAX_REDIRECTS = 5
+        val REDIRECT_CODES = setOf(301, 302, 303, 307, 308)
     }
 }
