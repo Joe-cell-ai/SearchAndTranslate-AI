@@ -75,6 +75,31 @@ class RestorationTileStitcherTest {
     }
 
     @Test
+    fun incrementalSessionCopiesTilesImmediatelyAndRequiresCompletePlan() {
+        val first = RestorationTile(
+            core = RestorationRect(0, 0, 2, 1),
+            expanded = RestorationRect(0, 0, 3, 1),
+        )
+        val second = RestorationTile(
+            core = RestorationRect(2, 0, 4, 1),
+            expanded = RestorationRect(1, 0, 4, 1),
+        )
+        val session = RestorationTileStitcher.Session(
+            inputWidth = 4,
+            inputHeight = 1,
+            scale = 1,
+            plannedTiles = listOf(first, second),
+        )
+        session.add(RestorationTileStitcher.TileOutput(first, intArrayOf(10, 11, 12), 3, 1))
+        assertThrows(IllegalArgumentException::class.java) { session.finish() }
+        session.add(RestorationTileStitcher.TileOutput(second, intArrayOf(21, 22, 23), 3, 1))
+        assertArrayEquals(intArrayOf(10, 11, 22, 23), session.finish())
+        assertThrows(IllegalArgumentException::class.java) {
+            session.add(RestorationTileStitcher.TileOutput(second, intArrayOf(21, 22, 23), 3, 1))
+        }
+    }
+
+    @Test
     fun enforcesOutputPixelBudget() {
         val tile = RestorationTile(
             core = RestorationRect(0, 0, 2, 2),
