@@ -137,3 +137,55 @@ jobs:
           print(f"TOTAL_NATIVE_BYTES={total}")
           print(f"TOTAL_NATIVE_MIB={total / 1024 / 1024:.2f}")
           PY
+
+  model-runtime-investigation:
+    name: Inspect Real-ESRGAN operators and Android runtime capabilities
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install ONNX inspection dependency
+        run: python -m pip install --disable-pip-version-check onnx
+
+      - name: Download pinned model and ONNX Runtime Android AAR
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-all-errors \
+            "https://huggingface.co/skillsafe-ai/realesrgan-x4plus/resolve/107475e49b7d46412cc966481efccc3500955801/model.onnx" \
+            -o "$RUNNER_TEMP/realesrgan.onnx"
+          echo "4851ec156207d271f5328605d0582eeb851e656227da8aca093ced9e60789291  $RUNNER_TEMP/realesrgan.onnx" | sha256sum --check
+          curl --fail --location --retry 3 --retry-all-errors \
+            "https://repo.maven.apache.org/maven2/com/microsoft/onnxruntime/onnxruntime-android/1.31.1/onnxruntime-android-1.31.1.aar" \
+            -o "$RUNNER_TEMP/onnxruntime-android.aar"
+
+      - name: Generate operator and AAR inventory
+        run: |
+          python tools/inspect_runtime_aar.py "$RUNNER_TEMP/realesrgan.onnx" "$RUNNER_TEMP/onnxruntime-android.aar" > runtime-investigation.json
+          python - <<'PY'
+          import json
+          r=json.load(open("runtime-investigation.json", encoding="utf-8"))
+          print("ONNX nodes:", r["model"]["node_count"])
+          print("Unique operator kinds:", r["model"]["unique_operator_kinds"])
+          print("ARM64 AAR libraries:")
+          for item in r["android_aar"]["native_libraries"]:
+              if "arm64-v8a" in item["path"]:
+                  print(item["path"], item["bytes"])
+          print("XNNPACK binary markers:", r["android_aar"]["xnnpack_binary_markers"])
+          print("Java API classes:", *r["android_aar"]["java_api_classes"], sep="\\n  ")
+          PY
+
+      - name: Upload investigation report
+        uses: actions/upload-artifact@v4
+        with:
+          name: realesrgan-runtime-investigation
+          path: runtime-investigation.json
+          if-no-files-found: error
+          retention-days: 14
