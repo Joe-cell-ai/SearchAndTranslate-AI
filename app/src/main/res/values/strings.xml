@@ -318,4 +318,16 @@
     <string name="launch_assistant_settings_subtitle">Set Search &amp; Translate as assistant: long-press Home or hold the gesture bar to open it</string>
     <string name="launch_a11y_settings_title">Accessibility</string>
     <string name="launch_a11y_settings_subtitle">Turn the accessibility service on: double-tap the top of the screen to open the app</string>
+
+    <!-- Additional reverse-image search destinations (manual upload on provider site) -->
+    <string name="engine_search4faces">Search4Faces</string>
+    <string name="engine_yandex">Yandex Images</string>
+    <string name="engine_facecheck">FaceCheck</string>
+    <string name="engine_kairos">Kairos Facial Recognition Demos</string>
+    <string name="engine_github_image_research">GitHub Image Research</string>
+    <string name="engine_threadreader">ThreadReader</string>
+    <string name="engine_osint_tools">OSINT Stuff Tool Collection</string>
+    <string name="engine_faceagle">Faceagle</string>
+    <string name="engine_picdetective">PicDetective</string>
+
 </resources>
