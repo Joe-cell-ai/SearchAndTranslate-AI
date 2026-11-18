@@ -79,3 +79,23 @@ The feature is ready for a release candidate only when the exact model artifact 
 - Makes the local-only privacy behavior visible in the UI.
 - Does not upload the selected image and does not fabricate a restored output. The restore action clearly reports that inference is unavailable until the verified engine/model pipeline is connected.
 - Android CI and manual picker/large-image validation remain required.
+
+
+## Development batch: verified Real-ESRGAN candidate admission (2026-11-18)
+
+A second candidate review identified the SkillSafe AI Real-ESRGAN x4plus FP32 ONNX artifact, pinned to Hugging Face revision `107475e49b7d46412cc966481efccc3500955801`.
+
+Publisher-reported artifact facts (not independently reproduced in this development environment):
+- Immutable artifact URL: `https://models.skillsafe.ai/sha256:4851ec156207d271f5328605d0582eeb851e656227da8aca093ced9e60789291/model.onnx`
+- Published SHA-256: `4851ec156207d271f5328605d0582eeb851e656227da8aca093ced9e60789291`
+- Published size: 63.95 MB
+- Published contract: input `input`, float32 NCHW `[batch, 3, height, width]`; output `output`, float32 `[batch, 3, height_x4, width_x4]`; opset 17.
+- Publisher reports BSD-3-Clause attribution to Xintao Wang / Real-ESRGAN and CPU parity results against its PyTorch reference.
+
+Admission remains BLOCKED until this exact binary is fetched into a controlled environment, SHA-256 is recomputed, and `tools/inspect_realesrgan_onnx.py` independently confirms the graph inputs, outputs, element types, dimensions, opset imports, and operators. The candidate is not yet enabled in the app catalog.
+
+The initial Android implementation target remains ONNX Runtime Android CPU with optional XNNPACK only after graph/operator compatibility is confirmed. No inference dependency is added in this batch because doing so before graph inspection could unnecessarily increase both APK variants.
+
+## Cleanup and artifact retention
+
+The previous CI workflow uploads both ABI APKs as one Actions artifact with a 14-day retention period. The available GitHub integration supports listing and downloading workflow artifacts but does not expose the artifact DELETE operation. Therefore this batch does not claim that the old GitHub artifact has been deleted. The user must delete the previously downloaded ZIP/APKs from the phone's Downloads app or file manager; this repository cannot remotely delete files on the device. Future CI packaging should retain both ABI variants unless a later measured size/build strategy changes that requirement.
