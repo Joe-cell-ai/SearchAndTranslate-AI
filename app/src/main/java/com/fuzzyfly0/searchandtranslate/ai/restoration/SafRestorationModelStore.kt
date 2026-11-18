@@ -11,7 +11,6 @@ package com.fuzzyfly0.searchandtranslate.ai.restoration
 import android.content.Context
 import android.net.Uri
 import android.provider.DocumentsContract
-import android.webkit.MimeTypeMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
@@ -65,8 +64,10 @@ class SafRestorationModelStore(context: Context) {
         val finalName = "${model.id}.model"
         val temporaryName = "${model.id}.download"
         val existing = findChild(treeUri, finalName)
+        val treeId = DocumentsContract.getTreeDocumentId(treeUri)
+        val parentDocument = DocumentsContract.buildDocumentUriUsingTree(treeUri, treeId)
         val temporary = DocumentsContract.createDocument(
-            resolver, treeUri, "application/octet-stream", temporaryName,
+            resolver, parentDocument, "application/octet-stream", temporaryName,
         ) ?: error("The selected folder cannot create files. Choose another folder.")
 
         var connection: HttpURLConnection? = null
@@ -213,7 +214,6 @@ class SafRestorationModelStore(context: Context) {
 
     private fun findChild(treeUri: Uri, displayName: String): Uri? = runCatching {
         val treeId = DocumentsContract.getTreeDocumentId(treeUri)
-        val parent = DocumentsContract.buildDocumentUriUsingTree(treeUri, treeId)
         val children = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, treeId)
         resolver.query(
             children,
