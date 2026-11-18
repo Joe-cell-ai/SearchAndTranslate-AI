@@ -21,36 +21,38 @@ currently run in the app.
 
 ## Real-ESRGAN x4plus model admission
 
-The first candidate is Qualcomm's published Real-ESRGAN x4plus ONNX export. The current
-admission contract is deliberately limited to the FLOAT32 CPU-compatible graph:
-`input` / `output`, static NCHW tensors, input [1, 3, 128, 128], output
-[1, 3, 512, 512], RGB values normalized to [0, 1]. The app rejects any export that does
-not match this contract rather than guessing tensor names, layout, precision, or scale.
+The candidate model is Qualcomm's published Real-ESRGAN x4plus ONNX FLOAT32 export.
+The checked-in admission contract expects a static NCHW tensor with 128x128 RGB input
+and 512x512 RGB output, normalized to [0, 1]. The contract validator rejects mismatched
+names, shapes and element types. This contract is a guardrail, not proof that a downloaded
+archive has those exact metadata: the model ZIP still needs to be inspected and matched
+against it before the model can be admitted to the app.
 
-The Qualcomm w8a8 quantized assets are not treated as generic CPU models: Qualcomm's
-sample implementation documents that its w8a8 path requires the HTP runtime. The Pixel
-10a target therefore needs the float graph and a verified CPU execution provider unless
-a separate compatible backend is demonstrated. No runtime dependency or model download
-catalog entry is added in this batch.
+The Qualcomm w8a8 quantized assets are not treated as generic CPU models. Qualcomm's
+sample documents that its w8a8 deployment path is HTP-specific. The Pixel 10a target
+therefore needs a verified CPU execution provider unless a separate compatible backend
+is demonstrated. No runtime dependency or model download catalog entry is added yet.
 
-The fixed 128px graph requires an image tiling/preprocessing adapter that preserves aspect
-ratio and correctly removes padding after x4 inference. The existing generic 256px
-restoration tile planner must not be passed directly to this model. The adapter, tensor
-contract inspection against the actual downloaded ONNX file, image-quality tests, CPU
-latency, peak RAM and APK-size impact remain admission gates.
+This batch adds a pure Kotlin RGB-to-NCHW tile preprocessor for the fixed 128px input.
+It converts ARGB pixels to planar RGB float values in [0, 1] and replicates the nearest
+edge pixel for partial tiles. It deliberately does not perform inference, output conversion,
+or tile stitching. Those steps must be tested against the actual model archive before
+enabling the feature.
 
 ## Android runtime evaluation
 
-The initial runtime candidate is ONNX Runtime for Android because an Android AAR and
-official Android deployment documentation are available. A full ONNX Runtime AAR may
-increase APK size materially, so it is not added to the app dependency graph yet. A
-reduced ONNX Runtime Mobile package requires ORT-format models and a matching reduced
-operator configuration; it is not a drop-in replacement for arbitrary ONNX exports.
+The initial runtime candidate is ONNX Runtime for Android. Its official mobile guidance
+supports CPU by default and lists XNNPACK and NNAPI as Android execution providers.
+A full ONNX Runtime Android package contains the full operator set; a reduced custom
+package requires a model-specific operator configuration and build. The runtime is not
+added to the app dependency graph until its APK-size impact and required operators are
+measured against the actual graph.
 
-Before adoption, verify the exact model archive and immutable revision, license/weight
-provenance, SHA-256 checksum, Android ABI support, native library footprint, and measured
-peak memory. The first supported model should be selected only after a Pixel-class arm64
-device test. GFPGAN remains a separate model/backend admission task.
+Before adoption, verify the exact model archive and immutable revision, tensor names and
+shapes, license/weight provenance, SHA-256 checksum, Android ABI support, native library
+footprint, CPU latency, and measured peak memory. The first supported model should be
+selected only after a Pixel-class arm64 device test. GFPGAN remains a separate model/backend
+admission task.
 
 ## Model admission checklist
 
