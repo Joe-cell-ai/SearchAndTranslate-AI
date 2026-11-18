@@ -757,6 +757,7 @@ fun SearchAndTranslateScreen(
      */
     fun startLassoTranslate(bmp: Bitmap, region: android.graphics.Rect): Boolean {
         if (region.width() <= 10 || region.height() <= 10) return false
+        SearchHistoryStore.record(context, "Translate selection")
         translatedRegion = android.graphics.Rect(region)
         saveCircle(selectionRect, region)
         pendingChoiceRegion = null
@@ -810,6 +811,7 @@ fun SearchAndTranslateScreen(
 
     /** Translates the whole [bmp] with the translator overlay; close/back returns here. */
     fun startFullTranslate(bmp: Bitmap) {
+        SearchHistoryStore.record(context, "Translate screen")
         translatedRegion = null
         if (pendingChoiceRegion != null) saveCircle(selectionRect, pendingChoiceRegion)
         pendingChoiceRegion = null
@@ -937,6 +939,7 @@ fun SearchAndTranslateScreen(
                 scope.launch {
                     selectionAnim.animateTo(1f, tween(600))
                     isSearching = true
+                                    SearchHistoryStore.record(context, "Search")
                 }
             }
         }
@@ -1982,6 +1985,7 @@ fun SearchAndTranslateScreen(
                                     pendingChoiceRegion = null
                                     selectedBitmap = pendingChoiceBitmap ?: ImageUtils.cropBitmap(shot, circleRegion)
                                     isSearching = true
+                                    SearchHistoryStore.record(context, "Search")
                                     return@BottomBarButton
                                 }
                                 if (screenshot != null) {
@@ -1995,6 +1999,7 @@ fun SearchAndTranslateScreen(
                                     // would otherwise flash it up for a frame.
                                     selectedBitmap = screenshot
                                     isSearching = true
+                                    SearchHistoryStore.record(context, "Search")
                                     selectionRect = Rect(0, 0, viewW, viewH)
                                     pendingChoiceRegion = null
                                     currentPathPoints.clear()
