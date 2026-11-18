@@ -34,6 +34,34 @@ jobs:
         with:
           python-version: '3.x'
 
+      - name: Independently verify pinned Real-ESRGAN ONNX artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          MODEL_DIR="$RUNNER_TEMP/restoration-model"
+          mkdir -p "$MODEL_DIR"
+          MODEL="$MODEL_DIR/realesrgan-x4plus-fp32.onnx"
+          curl --fail --location --retry 3 --retry-all-errors \
+            "https://models.skillsafe.ai/sha256:4851ec156207d271f5328605d0582eeb851e656227da8aca093ced9e60789291/model.onnx" \
+            --output "$MODEL"
+          echo "4851ec156207d271f5328605d0582eeb851e656227da8aca093ced9e60789291  $MODEL" | sha256sum --check
+          python -m pip install --disable-pip-version-check onnx
+          python tools/inspect_realesrgan_onnx.py "$MODEL" > "$MODEL_DIR/inspection.json"
+          python - "$MODEL_DIR/inspection.json" <<'PY'
+          import json, sys
+          report = json.load(open(sys.argv[1], encoding="utf-8"))
+          assert report["model_sha256"] == "4851ec156207d271f5328605d0582eeb851e656227da8aca093ced9e60789291"
+          assert report["model_bytes"] > 60_000_000
+          assert len(report["inputs"]) == 1 and len(report["outputs"]) == 1
+          source, output = report["inputs"][0], report["outputs"][0]
+          assert source["name"] == "input" and source["element_type"] == 1
+          assert output["name"] == "output" and output["element_type"] == 1
+          assert len(source["shape"]) == 4 and source["shape"][1] == 3
+          assert len(output["shape"]) == 4 and output["shape"][1] == 3
+          assert any(item["version"] == 17 for item in report["opsets"])
+          print(json.dumps(report, indent=2))
+          PY
+
       - name: Test model inspection tooling
         run: python -m unittest discover -s tools/tests -v
 
