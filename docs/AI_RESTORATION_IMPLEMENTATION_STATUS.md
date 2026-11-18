@@ -100,3 +100,10 @@ The feature is ready for a release candidate only when the exact model artifact 
 - The downloaded model remains in the ephemeral GitHub runner temp directory; it is not committed, cached as an app asset, or packaged into either APK.
 - This is an independent verification attempt performed by GitHub-hosted CI. A successful run is required before the candidate can be admitted to the app catalog.
 - Android inference runtime integration remains blocked until the exact graph/operator inventory and CI verification results are available.
+
+
+## CI failure diagnosis and correction
+
+- The first artifact verification run failed before checksum or ONNX inspection: the publisher registry URL returned HTTP 404.
+- Corrected the CI download source to the model's immutable Hugging Face revision URL, which is documented by the publisher as the same pinned artifact.
+- This correction does not treat the artifact as verified; CI must still download it, recompute the published SHA-256, and inspect the actual ONNX graph.
