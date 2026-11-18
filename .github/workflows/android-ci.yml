@@ -67,10 +67,12 @@ jobs:
       - name: Assemble debug APKs
         run: ./gradlew --no-daemon assembleDebug
 
-      - name: Upload debug APKs
+      # Build both ABI variants above, but publish only the 64-bit ARM APK
+      # used by the user's Pixel 10a. This avoids bundling the legacy 32-bit APK.
+      - name: Upload Pixel 10a ARM64 APK
         uses: actions/upload-artifact@v4
         with:
-          name: searchandtranslate-debug-apks
-          path: app/build/outputs/apk/debug/*.apk
+          name: searchandtranslate-pixel10a-arm64-apk
+          path: app/build/outputs/apk/debug/app-arm64-v8a-debug.apk
           if-no-files-found: error
           retention-days: 14
