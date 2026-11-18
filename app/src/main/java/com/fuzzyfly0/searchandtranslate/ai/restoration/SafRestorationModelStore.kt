@@ -163,13 +163,17 @@ class SafRestorationModelStore(context: Context) {
         val deleted = raw?.let { runCatching {
             DocumentsContract.deleteDocument(resolver, Uri.parse(it))
         }.getOrDefault(false) } ?: false
-        preferences.edit()
-            .remove(modelKey(model.id, "uri"))
-            .remove(modelKey(model.id, "sha256"))
-            .remove(modelKey(model.id, "size"))
-            .remove(modelKey(model.id, "task"))
-            .remove(modelKey(model.id, "name"))
-            .apply()
+        // Keep the index entry if the provider refused deletion. Otherwise the
+        // user would lose the only in-app reference to a model still on disk.
+        if (deleted) {
+            preferences.edit()
+                .remove(modelKey(model.id, "uri"))
+                .remove(modelKey(model.id, "sha256"))
+                .remove(modelKey(model.id, "size"))
+                .remove(modelKey(model.id, "task"))
+                .remove(modelKey(model.id, "name"))
+                .apply()
+        }
         deleted
     }
 
