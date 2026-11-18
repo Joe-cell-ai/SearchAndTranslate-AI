@@ -9,12 +9,10 @@
 package com.fuzzyfly0.searchandtranslate.ai.restoration
 
 /**
- * Admission contract for the published Real-ESRGAN x4plus 128px ONNX export.
+ * Admission contract for the independently inspected Real-ESRGAN x4plus FP32 ONNX graph.
  *
- * This describes the CPU-compatible FLOAT32 graph only. It intentionally does not
- * publish a download URL or checksum and does not imply that an inference runtime
- * is installed. Quantized Qualcomm HTP assets are not interchangeable with this
- * CPU contract.
+ * The published graph has dynamic spatial dimensions. TILE_EDGE is an application
+ * memory policy only; it is not a static ONNX input constraint.
  */
 object RealEsrganX4PlusContract {
     const val MODEL_ID = "realesrgan-x4plus-onnx-fp32"
@@ -23,18 +21,10 @@ object RealEsrganX4PlusContract {
     const val TILE_EDGE = 128
     const val UPSCALE_FACTOR = 4
 
-    val INPUT_SHAPE = longArrayOf(1, 3, TILE_EDGE.toLong(), TILE_EDGE.toLong())
-    val OUTPUT_SHAPE = longArrayOf(
-        1, 3,
-        (TILE_EDGE * UPSCALE_FACTOR).toLong(),
-        (TILE_EDGE * UPSCALE_FACTOR).toLong(),
-    )
+    /** -1 denotes a dynamic dimension in the inspected ONNX graph. */
+    val INPUT_SHAPE = longArrayOf(1, 3, -1, -1)
+    val OUTPUT_SHAPE = longArrayOf(1, 3, -1, -1)
 
-    /**
-     * Qualcomm's sample export uses a static NCHW RGB tensor, normalized to [0, 1].
-     * The output is RGB NCHW, also in [0, 1]. Reject unexpected exports rather than
-     * guessing layouts, names, precision, or dimensions at runtime.
-     */
     fun accepts(
         inputName: String,
         inputShape: LongArray,
@@ -44,9 +34,16 @@ object RealEsrganX4PlusContract {
         outputType: String,
     ): Boolean =
         inputName == INPUT_NAME &&
-            inputShape.contentEquals(INPUT_SHAPE) &&
+            acceptsDynamicRgbShape(inputShape) &&
             inputType == "tensor(float)" &&
             outputName == OUTPUT_NAME &&
-            outputShape.contentEquals(OUTPUT_SHAPE) &&
+            acceptsDynamicRgbShape(outputShape) &&
             outputType == "tensor(float)"
+
+    private fun acceptsDynamicRgbShape(shape: LongArray): Boolean =
+        shape.size == 4 &&
+            shape[0] == 1L &&
+            shape[1] == 3L &&
+            shape[2] == -1L &&
+            shape[3] == -1L
 }
