@@ -72,8 +72,8 @@ class RealEsrganOnnxEngine(
 
         val environment = OrtEnvironment.getEnvironment()
         val options = OrtSession.SessionOptions()
-        options.setIntraOpNumThreads(intraOpThreads)
         try {
+            options.setIntraOpNumThreads(intraOpThreads)
             environment.createSession(modelFile.absolutePath, options).use { session ->
                 require(session.inputNames.contains(RealEsrganX4PlusContract.INPUT_NAME)) {
                     "The selected model does not expose the expected Real-ESRGAN input."
@@ -101,6 +101,7 @@ class RealEsrganOnnxEngine(
                     val expectedWidth = Math.multiplyExact(tileWidth, scale)
                     val expectedHeight = Math.multiplyExact(tileHeight, scale)
                     val inputShape = longArrayOf(1L, 3L, tileHeight.toLong(), tileWidth.toLong())
+                    coroutineContext.ensureActive()
 
                     val tileArgb = OnnxTensor.createTensor(
                         environment,
@@ -159,9 +160,17 @@ class RealEsrganOnnxEngine(
                 coroutineContext.ensureActive()
                 val stitched = stitcher.finish()
                 coroutineContext.ensureActive()
-                Bitmap.createBitmap(outputWidth, outputHeight, Bitmap.Config.ARGB_8888).also {
-                    it.setPixels(stitched, 0, outputWidth, 0, 0, outputWidth, outputHeight)
+                val bitmap = Bitmap.createBitmap(outputWidth, outputHeight, Bitmap.Config.ARGB_8888)
+                try {
+                    bitmap.setPixels(stitched, 0, outputWidth, 0, 0, outputWidth, outputHeight)
+                    coroutineContext.ensureActive()
                     onProgress(0.99f)
+                    bitmap
+                } catch (failure: Throwable) {
+                    // Do not leak an allocated bitmap if filling it, cancellation, or
+                    // a progress callback fails before ownership reaches the caller.
+                    bitmap.recycle()
+                    throw failure
                 }
             }
         } catch (cancelled: CancellationException) {
