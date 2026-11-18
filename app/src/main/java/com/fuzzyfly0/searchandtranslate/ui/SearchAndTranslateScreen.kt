@@ -880,6 +880,7 @@ fun SearchAndTranslateScreen(
             }
         } else if (currentPathPoints.isNotEmpty()) {
             savedCircle = null
+            savedCircleBitmap = null
             var minX = Float.MAX_VALUE
             var minY = Float.MAX_VALUE
             var maxX = Float.MIN_VALUE
