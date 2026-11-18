@@ -11,19 +11,48 @@ package com.fuzzyfly0.searchandtranslate.ai.restoration
 import android.graphics.Bitmap
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ensureActive
+import java.io.File
 import kotlin.coroutines.coroutineContext
 
 /**
  * Coordinates model availability, memory policy and backend execution.
- *
- * This class deliberately contains no inference implementation. A concrete ONNX/NCNN
- * engine is injected once its model contract and Android runtime have been validated.
+ * SAF-backed models are staged in cache only for the active inference call.
  */
-class RestorationEngineRunner(
-    private val modelStore: RestorationModelStore,
+class RestorationEngineRunner private constructor(
+    private val withModelFile: suspend (
+        RestorationModel,
+        suspend (File) -> Bitmap,
+    ) -> Bitmap,
     private val engine: RestorationEngine,
-    private val policy: RestorationExecutionPolicy = RestorationExecutionPolicy(),
+    private val policy: RestorationExecutionPolicy,
 ) {
+    constructor(
+        modelStore: RestorationModelStore,
+        engine: RestorationEngine,
+        policy: RestorationExecutionPolicy = RestorationExecutionPolicy(),
+    ) : this(
+        withModelFile = { model, operation ->
+            val file = checkNotNull(modelStore.installedModel(model)) {
+                "Download and verify the restoration model before running"
+            }
+            operation(file)
+        },
+        engine = engine,
+        policy = policy,
+    )
+
+    constructor(
+        modelStore: SafRestorationModelStore,
+        engine: RestorationEngine,
+        policy: RestorationExecutionPolicy = RestorationExecutionPolicy(),
+    ) : this(
+        withModelFile = { model, operation ->
+            modelStore.withTemporaryModelFile(model, operation)
+        },
+        engine = engine,
+        policy = policy,
+    )
+
     suspend fun run(
         model: RestorationModel,
         input: Bitmap,
@@ -33,24 +62,22 @@ class RestorationEngineRunner(
         policy.validateInput(input.width, input.height)
         coroutineContext.ensureActive()
 
-        val installedModel = checkNotNull(modelStore.installedModel(model)) {
-            "Download and verify the restoration model before running"
-        }
-
         var lastProgress = 0f
         val output = try {
-            engine.restore(
-                modelFile = installedModel,
-                input = input,
-                task = model.task,
-            ) { reported ->
-                // Ignore NaN/infinite values and keep progress monotonic. Reserve 100%
-                // for a completed inference and a validated output bitmap.
-                if (reported.isFinite()) {
-                    val next = reported.coerceIn(lastProgress, 0.99f)
-                    if (next > lastProgress) {
-                        lastProgress = next
-                        onProgress(next)
+            withModelFile(model) { installedModel ->
+                engine.restore(
+                    modelFile = installedModel,
+                    input = input,
+                    task = model.task,
+                ) { reported ->
+                    // Ignore NaN/infinite values and keep progress monotonic. Reserve 100%
+                    // for a completed inference and a validated output bitmap.
+                    if (reported.isFinite()) {
+                        val next = reported.coerceIn(lastProgress, 0.99f)
+                        if (next > lastProgress) {
+                            lastProgress = next
+                            onProgress(next)
+                        }
                     }
                 }
             }
