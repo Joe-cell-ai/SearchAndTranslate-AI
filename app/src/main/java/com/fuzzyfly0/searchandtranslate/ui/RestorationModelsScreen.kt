@@ -44,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.fuzzyfly0.searchandtranslate.ai.restoration.RestorationTask
 import com.fuzzyfly0.searchandtranslate.ai.restoration.SafRestorationModelStore
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
